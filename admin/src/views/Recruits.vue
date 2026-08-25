@@ -89,39 +89,17 @@
     </div>
   </div>
 </div>
-
-<!-- 审核弹窗 -->
-<div v-if="auditing" class="modal-mask" @click.self="!auditing.submitting&&(auditing=null)">
-  <div class="modal-box" style="min-width:460px">
-    <div class="modal-hd">
-      <h3>{{auditing.approved?'通过申请':'拒绝申请'}}</h3>
-      <i class="ri-close-line" style="cursor:pointer;font-size:20px" @click="auditing=null"></i>
-    </div>
-    <p class="audit-target">申请人：<b>{{auditing.app.name}}</b>（{{dirLabel(auditing.app.direction)}} · {{auditing.app.contact}}）</p>
-    <div class="form-group">
-      <label class="form-label">{{auditing.approved?'通过备注（可选）':'拒绝原因（必填）'}}</label>
-      <textarea class="form-input" rows="3" v-model="auditing.remark" :placeholder="auditing.approved?'如：作品不错，安排跟进创建账号':'如：方向与当前团队需求不匹配'"></textarea>
-    </div>
-    <p v-if="auditing.error" class="form-err"><i class="ri-error-warning-line"></i>{{auditing.error}}</p>
-    <div class="modal-ft">
-      <button class="btn btn-outline" :disabled="auditing.submitting" @click="auditing=null">取消</button>
-      <button :class="'btn '+(auditing.approved?'btn-success':'btn-danger')" :disabled="auditing.submitting" @click="submitAudit">
-        {{auditing.submitting?'提交中…':(auditing.approved?'确认通过':'确认拒绝')}}
-      </button>
-    </div>
-  </div>
-</div>
 </div>
 </template>
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '@/api'
+import { appConfirm } from '@/components/ui/AppConfirm.vue'
 
 const list = ref([])
 const loaded = ref(false)
 const activeTab = ref('pending')
 const detail = ref(null)
-const auditing = ref(null)
 
 const tabs = [{key:'pending',label:'待审核'},{key:'approved',label:'已通过'},{key:'rejected',label:'已拒绝'},{key:'',label:'全部'}]
 const sl = {pending:'待审核',approved:'已通过',rejected:'已拒绝'}
@@ -158,23 +136,25 @@ const linkify = text => {
   return segs
 }
 
-const openAudit = (a, approved) => {
-  auditing.value = { app: a, approved, remark: '', error: '', submitting: false }
-}
-const submitAudit = async () => {
-  const ctx = auditing.value
-  if (!ctx.approved && !ctx.remark.trim()) { ctx.error = '请填写拒绝原因'; return }
-  ctx.submitting = true
-  ctx.error = ''
-  try {
-    const saved = await api.put('/recruit/' + ctx.app.id + '/audit', { approved: ctx.approved, remark: ctx.remark.trim() })
-    auditing.value = null
-    if (detail.value && detail.value.id === ctx.app.id) detail.value = { ...detail.value, ...saved }
-    await filterBy(activeTab.value)
-  } catch (err) {
-    ctx.error = err?.message || '操作失败，请重试'
-    ctx.submitting = false
-  }
+const openAudit = async (a, approved) => {
+  const done = await appConfirm({
+    title: approved ? '通过申请' : '拒绝申请',
+    message: `申请人：${a.name}（${dirLabel(a.direction)} · ${a.contact}）`,
+    confirmText: approved ? '确认通过' : '确认拒绝',
+    variant: approved ? 'success' : 'danger',
+    loadingText: '提交中…',
+    input: {
+      label: approved ? '通过备注（可选）' : '拒绝原因（必填）',
+      placeholder: approved ? '如：作品不错，安排跟进创建账号' : '如：方向与当前团队需求不匹配',
+      required: !approved, requiredMessage: '请填写拒绝原因', rows: 3,
+    },
+    onConfirm: async remark => {
+      const saved = await api.put('/recruit/' + a.id + '/audit', { approved, remark })
+      if (detail.value && detail.value.id === a.id) detail.value = { ...detail.value, ...saved }
+    },
+  })
+  if (!done) return
+  await filterBy(activeTab.value)
 }
 </script>
 <style scoped>
@@ -199,7 +179,4 @@ const submitAudit = async () => {
 .d-text{margin-top:6px;font-size:14px;line-height:1.8;white-space:pre-wrap;word-break:break-all;background:#FAFAFA;border:1px solid var(--border);border-radius:6px;padding:12px 14px}
 .d-text a{display:inline-flex;align-items:center;gap:2px;word-break:break-all}
 .d-text a:hover{text-decoration:underline}
-
-.audit-target{font-size:13px;color:var(--text2);margin-bottom:16px}
-.form-err{display:flex;align-items:center;gap:4px;color:var(--danger);font-size:13px;margin-top:-6px}
 </style>

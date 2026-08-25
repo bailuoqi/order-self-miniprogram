@@ -58,14 +58,13 @@
   </div>
 </div>
 <div class="ft-bar"><button class="btn btn-outline" @click="back">取消</button><button class="btn btn-primary" @click="save" :disabled="saving">{{saving?'保存中...':'保存'}}</button></div>
-
-<transition name="toast-fade"><div v-if="toast" class="toast" :class="{'toast-err':toastErr}">{{toast}}</div></transition>
 </div>
 </template>
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/api'
+import { toast } from '@/components/ui/AppToast.vue'
 const router=useRouter()
 const route=useRoute()
 const isEdit=!!route.params.id
@@ -75,9 +74,6 @@ const form=ref({title:'',category_id:null,stock:-1,description:'',delivery_days:
 // 价格用字符串受控，避免清空输入时 (''/100).toFixed 产生 NaN（D20）
 const priceYuan=ref('')
 const originalPriceYuan=ref('')
-
-const toast=ref('');const toastErr=ref(false);let toastTimer=null
-const showToast=(msg,err=false)=>{toast.value=msg;toastErr.value=err;clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.value='',2500)}
 
 onMounted(async()=>{
   try{categories.value=await api.get('/categories')}catch(e){}
@@ -91,7 +87,7 @@ onMounted(async()=>{
       }
       priceYuan.value=(p.price/100).toFixed(2)
       originalPriceYuan.value=p.original_price?(p.original_price/100).toFixed(2):''
-    }catch(e){showToast(e.message||'加载商品失败',true)}
+    }catch(e){toast(e.message||'加载商品失败','error')}
   }
 })
 
@@ -116,7 +112,7 @@ const onCoverChosen=async(e)=>{
   if(!file)return
   coverUploading.value=true
   try{form.value.cover=await uploadImage(file)}
-  catch(err){showToast(err.message||'封面上传失败',true)}
+  catch(err){toast(err.message||'封面上传失败','error')}
   finally{coverUploading.value=false}
 }
 const pickImages=()=>imagesInput.value?.click()
@@ -127,7 +123,7 @@ const onImagesChosen=async(e)=>{
   imagesUploading.value=files.length
   for(const file of files){
     try{form.value.images.push(await uploadImage(file))}
-    catch(err){showToast(err.message||'图片上传失败',true)}
+    catch(err){toast(err.message||'图片上传失败','error')}
     finally{imagesUploading.value--}
   }
 }
@@ -139,10 +135,10 @@ const moveImage=(i,dir)=>{
 }
 
 const save=async()=>{
-  if(!form.value.title.trim())return showToast('请填写标题',true)
-  if(!form.value.category_id)return showToast('请选择分类',true)
+  if(!form.value.title.trim())return toast('请填写标题','error')
+  if(!form.value.category_id)return toast('请选择分类','error')
   const price=toCents(priceYuan.value)
-  if(price<=0)return showToast('请填写有效价格',true)
+  if(price<=0)return toast('请填写有效价格','error')
   saving.value=true
   const payload={
     title:form.value.title.trim(),category_id:form.value.category_id,
@@ -156,7 +152,7 @@ const save=async()=>{
     if(isEdit) await api.put('/products/'+form.value.id,payload)
     else await api.post('/products',payload)
     router.push('/products')
-  }catch(e){showToast(e.message||'保存失败',true)}
+  }catch(e){toast(e.message||'保存失败','error')}
   finally{saving.value=false}
 }
 const back=()=>router.push('/products')
@@ -188,8 +184,4 @@ const back=()=>router.push('/products')
 .img-slot{width:104px;height:104px}
 .spin{animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);background:rgba(26,26,46,.9);color:#fff;padding:10px 22px;border-radius:8px;font-size:14px;z-index:2000;box-shadow:0 6px 20px rgba(0,0,0,.2)}
-.toast-err{background:var(--danger)}
-.toast-fade-enter-active,.toast-fade-leave-active{transition:all .25s}
-.toast-fade-enter-from,.toast-fade-leave-to{opacity:0;transform:translate(-50%,-8px)}
 </style>

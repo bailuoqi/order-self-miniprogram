@@ -22,7 +22,7 @@
       <td :title="a.last_login_at?.replace('T',' ').slice(0,19)||''">{{relTime(a.last_login_at)}}</td>
       <td>
         <button class="btn btn-outline btn-sm" @click="openEdit(a)">编辑</button>
-        <button v-if="a.role!=='super'" class="btn btn-danger btn-sm" style="margin-left:4px" @click="confirmDel=a">删除</button>
+        <button v-if="a.role!=='super'" class="btn btn-danger btn-sm" style="margin-left:4px" @click="remove(a)">删除</button>
         <span v-else class="protect-hint" title="超级管理员为系统内置账号，不可删除、停用或变更角色"><i class="ri-lock-line"></i>受保护</span>
       </td>
     </tr></tbody>
@@ -66,33 +66,18 @@
     </div>
   </div>
 </div>
-
-<!-- 删除确认弹窗 -->
-<div v-if="confirmDel" class="modal-mask" @click.self="!removing&&(confirmDel=null)">
-  <div class="modal-box" style="min-width:400px">
-    <div class="modal-hd"><h3>删除成员</h3><i class="ri-close-line" style="cursor:pointer;font-size:20px" @click="confirmDel=null"></i></div>
-    <p style="line-height:1.7">确定删除成员「<b>{{confirmDel.display_name||confirmDel.username}}</b>」？<br /><span style="font-size:13px;color:var(--text3)">删除后该账号将无法登录后台，此操作不可恢复。</span></p>
-    <p v-if="removeError" class="form-err"><i class="ri-error-warning-line"></i>{{removeError}}</p>
-    <div class="modal-ft">
-      <button class="btn btn-outline" :disabled="removing" @click="confirmDel=null">取消</button>
-      <button class="btn btn-danger" :disabled="removing" @click="remove">{{removing?'删除中…':'确认删除'}}</button>
-    </div>
-  </div>
-</div>
 </div>
 </template>
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '@/api'
+import { appConfirm } from '@/components/ui/AppConfirm.vue'
 
 const list = ref([])
 const showEdit = ref(false)
 const form = ref({})
 const formError = ref('')
 const saving = ref(false)
-const confirmDel = ref(null)
-const removeError = ref('')
-const removing = ref(false)
 
 // 六种角色各自的一句话说明（tooltip / 表单提示共用）
 const roles = {
@@ -159,16 +144,15 @@ const save = async () => {
     formError.value = e?.message || '保存失败，请重试'
   } finally { saving.value = false }
 }
-const remove = async () => {
-  removing.value = true
-  removeError.value = ''
-  try {
-    await api.delete('/admins/' + confirmDel.value.id)
-    confirmDel.value = null
-    await load()
-  } catch (e) {
-    removeError.value = e?.message || '删除失败，请重试'
-  } finally { removing.value = false }
+const remove = async a => {
+  const done = await appConfirm({
+    title: '删除成员',
+    message: `确定删除成员「${a.display_name || a.username}」？\n删除后该账号将无法登录后台，此操作不可恢复。`,
+    confirmText: '确认删除', danger: true, loadingText: '删除中…',
+    onConfirm: async () => { await api.delete('/admins/' + a.id) },
+  })
+  if (!done) return
+  await load()
 }
 </script>
 <style scoped>

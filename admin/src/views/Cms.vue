@@ -15,25 +15,19 @@
       <td><span :class="'tag '+(TYPE_META[a.type]?.tag||'tag-blue')" :title="TYPE_META[a.type]?.note||''">{{TYPE_META[a.type]?.label||a.type}}</span></td>
       <td>{{a.views}}</td>
       <td><span :class="'tag '+(a.status?'tag-green':'tag-red')">{{a.status?'显示':'隐藏'}}</span></td>
-      <td class="op-cell"><router-link :to="'/cms/edit/'+a.id" class="btn btn-outline btn-sm"><i class="ri-edit-line"></i> 编辑</router-link><button class="btn btn-outline btn-sm op-danger" @click="delTarget=a"><i class="ri-delete-bin-line"></i> 删除</button></td>
+      <td class="op-cell"><router-link :to="'/cms/edit/'+a.id" class="btn btn-outline btn-sm"><i class="ri-edit-line"></i> 编辑</router-link><button class="btn btn-outline btn-sm op-danger" @click="doDelete(a)"><i class="ri-delete-bin-line"></i> 删除</button></td>
     </tr></tbody>
   </table>
   <p v-if="!list.length" class="empty"><i class="ri-inbox-line"></i>暂无内容<br/><router-link to="/cms/edit" class="btn btn-primary" style="margin-top:14px"><i class="ri-add-line"></i> 新增内容</router-link></p>
   <p v-else-if="!filtered.length" class="empty"><i class="ri-filter-off-line"></i>没有符合筛选条件的内容</p>
 </div>
-
-<div class="modal-mask" v-if="delTarget" @click.self="delTarget=null"><div class="modal-box" style="min-width:360px">
-  <div class="modal-hd"><h3>删除确认</h3><i class="ri-close-line" style="cursor:pointer;font-size:20px" @click="delTarget=null"></i></div>
-  <p class="confirm-text">确定删除「{{delTarget.title}}」？删除后不可恢复。</p>
-  <div class="modal-ft"><button class="btn btn-outline" @click="delTarget=null">取消</button><button class="btn btn-danger" :disabled="acting" @click="doDelete">{{acting?'删除中...':'确定删除'}}</button></div>
-</div></div>
-
-<transition name="toast-fade"><div v-if="toast" class="toast" :class="{'toast-err':toastErr}">{{toast}}</div></transition>
 </div>
 </template>
 <script setup>
 import { ref, computed, onMounted } from "vue"
 import api from "@/api"
+import { toast } from "@/components/ui/AppToast.vue"
+import { appConfirm } from "@/components/ui/AppConfirm.vue"
 const TYPE_META={
   notice:{label:"公告",tag:"tag-blue",note:"客户端首页公告条与公告列表"},
   help:{label:"帮助",tag:"tag-green",note:"客户端帮助/常见问题"},
@@ -44,17 +38,12 @@ const typeTabs=[{value:"all",label:"全部"},{value:"notice",label:"公告"},{va
 const list=ref([])
 const typeTab=ref("all")
 const kw=ref("")
-const delTarget=ref(null)
-const acting=ref(false)
-
-const toast=ref("");const toastErr=ref(false);let toastTimer=null
-const showToast=(msg,err=false)=>{toast.value=msg;toastErr.value=err;clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.value="",2500)}
 
 const fetchList=async()=>{
   try{
     const r=await api.get("/cms/articles/all",{params:{pageSize:200}})
     list.value=r.list||[]
-  }catch(e){showToast(e.message||"加载失败",true)}
+  }catch(e){toast(e.message||"加载失败","error")}
 }
 onMounted(fetchList)
 
@@ -67,12 +56,15 @@ const filtered=computed(()=>{
   )
 })
 
-const doDelete=async()=>{
-  if(!delTarget.value)return
-  acting.value=true
-  try{await api.delete("/cms/articles/"+delTarget.value.id);delTarget.value=null;await fetchList();showToast("已删除")}
-  catch(e){showToast(e.message||"删除失败",true)}
-  finally{acting.value=false}
+const doDelete=async(a)=>{
+  const done=await appConfirm({
+    title:"删除确认",
+    message:`确定删除「${a.title}」？删除后不可恢复。`,
+    confirmText:"确定删除",danger:true,loadingText:"删除中...",
+    onConfirm:async()=>{await api.delete("/cms/articles/"+a.id)},
+  })
+  if(!done)return
+  await fetchList();toast("已删除","success")
 }
 </script>
 <style scoped>
@@ -89,10 +81,5 @@ const doDelete=async()=>{
 .op-cell{white-space:nowrap}
 .op-cell .btn+.btn{margin-left:8px}
 .op-danger:hover{border-color:var(--danger);color:var(--danger)}
-.confirm-text{color:var(--text2);line-height:1.7}
-.toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);background:rgba(26,26,46,.9);color:#fff;padding:10px 22px;border-radius:8px;font-size:14px;z-index:2000;box-shadow:0 6px 20px rgba(0,0,0,.2)}
-.toast-err{background:var(--danger)}
-.toast-fade-enter-active,.toast-fade-leave-active{transition:all .25s}
-.toast-fade-enter-from,.toast-fade-leave-to{opacity:0;transform:translate(-50%,-8px)}
 @media (max-width:1366px){.search-box{width:190px}}
 </style>

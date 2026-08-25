@@ -1,14 +1,14 @@
 <!--
-  AppToast 全局轻提示（S1 基建 / T3）
+  AppToast 全局轻提示（S1 基建 / T3，二期 C4/X2 收敛：全站保存/失败等轻提示统一走本组件）
 
-  接口契约（供二期各流收敛时对齐，一期仅 S1 自有文件调用）：
+  接口契约：
     import { toast } from '@/components/ui/AppToast.vue'
     toast(message)                       // 默认 info，2500ms 自动消失
     toast(message, type)                 // type: 'info' | 'success' | 'error' | 'warning'
     toast(message, type, duration)      // duration: 毫秒，<=0 时不自动消失（点击可关闭）
 
-  挂载约定：<AppToast /> 已在 Layout.vue 挂载一次（Login 等 Layout 外页面如需使用需自行挂载）。
-  多条提示自动堆叠，顶部居中显示，不阻断操作。
+  挂载约定：<AppToast /> 已在 Layout.vue 挂载一次（全局单例，Layout 内各视图直接 import { toast } 调用即可；
+  Login 等 Layout 外页面如需使用需自行挂载）。多条提示自动堆叠，顶部居中显示，不阻断操作。
 -->
 <script>
 import { reactive } from 'vue'

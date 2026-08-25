@@ -35,14 +35,7 @@
   <p v-if="loading&&!list.length" class="empty" style="padding:40px 0"><i class="ri-loader-4-line"></i>加载中...</p>
 
   <!-- 分页（服务端 page/pageSize） -->
-  <div class="pager" v-if="total>0">
-    <span class="pager-info">共 {{total}} 条 · 第 {{page}}/{{totalPages}} 页</span>
-    <div class="pager-btns">
-      <button class="pg-btn" :disabled="page<=1" @click="goPage(page-1)"><i class="ri-arrow-left-s-line"></i></button>
-      <button v-for="p in pageItems" :key="p.key" class="pg-btn" :class="{active:p.num===page,dots:!p.num}" :disabled="!p.num" @click="p.num&&goPage(p.num)">{{p.num||'…'}}</button>
-      <button class="pg-btn" :disabled="page>=totalPages" @click="goPage(page+1)"><i class="ri-arrow-right-s-line"></i></button>
-    </div>
-  </div>
+  <AppPagination :page="page" :total="total" :page-size="pageSize" @update:page="goPage" />
 </div>
 </div>
 </template>
@@ -51,6 +44,7 @@ import { ref, computed, onMounted } from "vue"
 import { useRoute } from "vue-router"
 import api from "@/api"
 import { ORDER_STATUS_MAP, ORDER_STATUS_TAG, ORDER_SOURCE_MAP, ORDER_SOURCE_TAG } from "@/utils/order-status"
+import AppPagination from "@/components/ui/AppPagination.vue"
 const route = useRoute()
 const list=ref([]);const activeTab=ref("")
 const keyword=ref("");const source=ref("")
@@ -69,20 +63,7 @@ const tabs=[
   {key:"refunding",label:"退款中"},
 ]
 const label=s=>ORDER_STATUS_MAP[s]||s;const tagClass=s=>ORDER_STATUS_TAG[s]||""
-const totalPages=computed(()=>Math.max(1,Math.ceil(total.value/pageSize)))
 const hasFilter=computed(()=>!!(keyword.value.trim()||source.value||activeTab.value))
-/** 页码序列：首尾恒显，当前页 ±2，间隔折叠为省略号 */
-const pageItems=computed(()=>{
-  const n=totalPages.value,cur=page.value,items=[]
-  let last=0
-  for(let i=1;i<=n;i++){
-    if(i===1||i===n||Math.abs(i-cur)<=2){
-      if(last&&i-last>1)items.push({key:'d'+i,num:0})
-      items.push({key:i,num:i});last=i
-    }
-  }
-  return items
-})
 const fetchList=async()=>{
   loading.value=true
   try{
@@ -106,7 +87,6 @@ const doSearch=()=>{page.value=1;fetchList()}
 const clearKeyword=()=>{keyword.value="";doSearch()}
 const resetFilter=()=>{keyword.value="";source.value="";activeTab.value="";page.value=1;fetchList()}
 const goPage=(p)=>{
-  if(p<1||p>totalPages.value||p===page.value)return
   page.value=p;fetchList()
   window.scrollTo({top:0,behavior:"smooth"})
 }
@@ -124,12 +104,4 @@ onMounted(()=>filterBy(route.query.status||""))
 .clear-ic:hover{color:var(--text2)}
 .source-sel{padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;outline:none;background:#fff;color:var(--text2);cursor:pointer}
 .source-sel:focus{border-color:var(--primary)}
-.pager{display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);flex-wrap:wrap;gap:10px}
-.pager-info{font-size:13px;color:var(--text3)}
-.pager-btns{display:flex;gap:6px}
-.pg-btn{min-width:32px;height:32px;padding:0 8px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--text2);cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center;transition:all .15s}
-.pg-btn:hover:not(:disabled):not(.active){border-color:var(--primary);color:var(--primary)}
-.pg-btn.active{background:var(--primary);border-color:var(--primary);color:#fff;cursor:default}
-.pg-btn.dots{border:none;background:transparent;cursor:default}
-.pg-btn:disabled:not(.dots){opacity:.4;cursor:not-allowed}
 </style>
