@@ -84,3 +84,16 @@
 .ri-wallet-3-line:before { content: "\f2ac"; }
 .ri-wechat-2-line:before { content: "\f2b4"; }
 .ri-wechat-pay-line:before { content: "\f2b8"; }
+
+/* ==== 二期追加（C1/U5，方案 5.4 图标白名单）：仅追加类→码点映射，字体文件不动；
+   与 common/page-config.js 的 ICON_WHITELIST 保持同步 ==== */
+.ri-service-line:before { content: "\f0e2"; }
+.ri-calendar-line:before { content: "\eb27"; }
+.ri-star-line:before { content: "\f18b"; }
+.ri-more-line:before { content: "\ef79"; }
+.ri-volume-up-line:before { content: "\f2a2"; }
+.ri-image-line:before { content: "\ee4b"; }
+.ri-search-line:before { content: "\f0d1"; }
+.ri-apps-line:before { content: "\ea44"; }
+.ri-shopping-bag-3-line:before { content: "\f116"; }
+.ri-gift-line:before { content: "\edbb"; }

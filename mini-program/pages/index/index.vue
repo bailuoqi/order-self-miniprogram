@@ -1,12 +1,12 @@
 <template>
-  <view class="page-index">
-    <!-- 自定义导航栏 -->
-    <view class="nav-bar" :style="{ paddingTop: statusBarHeight + 'px' }">
+  <view class="page-index" :style="pageBgStyle">
+    <!-- 自定义导航栏（chrome 常驻：配置生效时仅吃 global 配色，宽屏下隐藏交给 topWindow） -->
+    <view class="nav-bar" :style="navBarStyle">
       <view class="nav-content">
         <view class="nav-brand">
-          <text class="brand-name">{{ brandName }}</text>
+          <text class="brand-name" :style="navTextStyle">{{ brandName }}</text>
         </view>
-        <view class="nav-search" @click="goCategory">
+        <view class="nav-search" :class="{ 'nav-search--flat': pageConfig }" @click="goCategory">
           <i class="ri-search-2-line" style="font-size:28rpx;color:#999;" />
           <text class="search-placeholder">搜索软件定制或电子代做</text>
         </view>
@@ -16,6 +16,16 @@
       </view>
     </view>
 
+    <!-- #ifdef H5 -->
+    <!-- 草稿预览角标（?preview=draft 读 home-draft，不写缓存） -->
+    <view v-if="isDraftPreview" class="draft-badge">草稿预览</view>
+    <!-- #endif -->
+
+    <!-- 装修配置版内容区：合法 schemaVersion:1 配置全量替换渲染（二期 C1） -->
+    <config-blocks v-if="pageConfig" :components="pageConfig.components" :global="pageConfig.global" />
+
+    <!-- 硬编码兜底版式：配置缺失/旧形状/为空/请求失败时原样渲染 -->
+    <template v-else>
     <!-- 品牌横幅 -->
     <view class="hero-card">
       <text class="hero-title">软件定制 · 电子代做</text>
@@ -186,6 +196,7 @@
         </view>
       </view>
     </view>
+    </template>
 
     <!-- 底部品牌收尾 -->
     <view class="page-foot">
@@ -199,13 +210,21 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import { useCategoryStore } from '@/store/category.js';
 import { useProductStore } from '@/store/product.js';
 import { useAuthStore } from '@/store/auth.js';
 import { api } from '@/api/request.js';
 import { categoryIconName, productIconName, GUARANTEES, FAQS, DEFAULT_NOTICE } from '@/common/browse.js';
+import {
+  HOME_CONFIG_CACHE_KEY,
+  sniffPageConfig,
+  isValidPageConfig,
+  normalizePageConfig,
+  pickBrandName,
+} from '@/common/page-config.js';
+import ConfigBlocks from '@/components/page-config/config-blocks.vue';
 
 const authStore = useAuthStore();
 const categoryStore = useCategoryStore();
@@ -214,6 +233,87 @@ const productStore = useProductStore();
 const statusBarHeight = ref(20);
 const brandName = ref('定制接单');
 const userAvatar = ref('');
+
+// ==================== 装修配置消费（二期 C1 / U1+U3+U4） ====================
+
+// 合法配置的归一化渲染态（{components, global}）；null = 走硬编码兜底
+const pageConfig = ref(null);
+
+// H5 且 URL query 含 preview=draft 时改拉 home-draft（草稿预览，不写缓存）
+let draftPreview = false;
+// #ifdef H5
+try {
+  draftPreview = /[?&]preview=draft(?=[&#]|$)/.test(window.location.href);
+} catch (e) { /* 解析失败按非预览处理 */ }
+// #endif
+const isDraftPreview = draftPreview;
+
+// 本地缓存首帧直出：上次合法的线上配置先渲染，onShow 后台刷新（草稿预览跳过）
+if (!isDraftPreview) {
+  try {
+    const cached = uni.getStorageSync(HOME_CONFIG_CACHE_KEY);
+    if (cached) {
+      const cfg = sniffPageConfig(cached);
+      if (isValidPageConfig(cfg)) pageConfig.value = normalizePageConfig(cfg);
+    }
+  } catch (e) { /* 缓存不可用则等待网络结果 */ }
+}
+
+// global 消费：pageTitle → 页面标题（H5 为 document.title）；导航配色见下方 computed
+const applyPageTitle = () => {
+  const g = pageConfig.value && pageConfig.value.global;
+  if (g && g.pageTitle) {
+    try { uni.setNavigationBarTitle({ title: g.pageTitle }); } catch (e) { /* 忽略 */ }
+  }
+};
+
+const fetchPageConfig = async () => {
+  const key = isDraftPreview ? 'home-draft' : 'home';
+  try {
+    const raw = await api.get('/page-config/' + key);
+    const cfg = sniffPageConfig(raw);
+    if (isValidPageConfig(cfg)) {
+      pageConfig.value = normalizePageConfig(cfg);
+      applyPageTitle();
+      if (!isDraftPreview) uni.setStorageSync(HOME_CONFIG_CACHE_KEY, raw);
+    } else {
+      // 配置缺失 / 旧形状 / 空 components：清缓存，渲染硬编码兜底
+      pageConfig.value = null;
+      if (!isDraftPreview) uni.removeStorageSync(HOME_CONFIG_CACHE_KEY);
+    }
+  } catch (e) {
+    pageConfig.value = null;
+    if (!isDraftPreview) {
+      try { uni.removeStorageSync(HOME_CONFIG_CACHE_KEY); } catch (e2) { /* 忽略 */ }
+    }
+  }
+};
+
+// 导航 chrome 常驻，配置生效时吃 global 配色（宽屏下页内导航整体隐藏，不受影响）
+const navBarStyle = computed(() => {
+  const s = { paddingTop: statusBarHeight.value + 'px' };
+  const g = pageConfig.value && pageConfig.value.global;
+  if (g && g.navBgColor) s.background = g.navBgColor;
+  return s;
+});
+const navTextStyle = computed(() => {
+  const g = pageConfig.value && pageConfig.value.global;
+  return g && g.navTextColor ? { color: g.navTextColor } : {};
+});
+const pageBgStyle = computed(() => {
+  const g = pageConfig.value && pageConfig.value.global;
+  return g && g.bgColor ? { background: g.bgColor } : {};
+});
+
+// ==================== 品牌名消费（二期 C1 / U6） ====================
+
+const fetchBrand = async () => {
+  try {
+    const raw = await api.get('/page-config/settings');
+    const name = pickBrandName(raw);
+    if (name) brandName.value = name;
+  } catch (e) { /* 失败回退「定制接单」 */ }
+};
 
 const categoryGroups = ref([]);
 const hotProducts = ref([]);
@@ -263,21 +363,28 @@ onShow(() => {
   if (authStore.userInfo) {
     userAvatar.value = authStore.userInfo.avatar || '';
   }
+  // 配置请求 / 品牌名与既有数据请求并行，互不阻塞
+  fetchPageConfig();
+  fetchBrand();
   fetchData();
 });
 
 // #ifdef H5
-// 桌面浏览器预览时，让鼠标滚轮可以横向滚动热门服务
+// 桌面浏览器预览时，让鼠标滚轮可以横向滚动热门服务。
+// 挂在页面根节点做事件委托：配置版 ↔ 兜底版切换后热门区重新出现时依然生效。
 onMounted(() => {
-  const root = document.querySelector('.product-scroll');
+  const root = document.querySelector('.page-index');
   if (!root) return;
   root.addEventListener(
     'wheel',
     (e) => {
-      const scroller = Array.from(root.querySelectorAll('div')).find(
+      if (!e.deltaY) return;
+      const host = e.target && e.target.closest ? e.target.closest('.product-scroll') : null;
+      if (!host) return;
+      const scroller = Array.from(host.querySelectorAll('div')).find(
         (d) => d.scrollWidth > d.clientWidth + 1
       );
-      if (scroller && e.deltaY) {
+      if (scroller) {
         e.preventDefault();
         scroller.scrollLeft += e.deltaY;
       }
@@ -346,6 +453,10 @@ const goProductDetail = (product) => uni.navigateTo({ url: '/subpkg/product/deta
   padding: 0 28rpx;
   gap: 12rpx;
   background: rgba(255,255,255,0.9);
+}
+/* 配置版导航吃 global 配色（默认白底）时，搜索框改中性底色保证可见 */
+.nav-search--flat {
+  background: #F5F6FA;
 }
 .search-placeholder {
   color: #999;
@@ -821,6 +932,22 @@ const goProductDetail = (product) => uni.navigateTo({ url: '/subpkg/product/deta
 }
 
 /* #ifdef H5 */
+/* 草稿预览角标（仅 H5 出现）：贴右侧悬浮，不遮挡导航与 tabBar */
+.draft-badge {
+  position: fixed;
+  right: 0;
+  top: 30%;
+  z-index: 999;
+  background: linear-gradient(135deg, #FF6D00, #FF9100);
+  color: #fff;
+  font-size: 22rpx;
+  font-weight: 600;
+  padding: 10rpx 16rpx 10rpx 20rpx;
+  border-radius: 28rpx 0 0 28rpx;
+  box-shadow: 0 4rpx 16rpx rgba(255, 109, 0, 0.35);
+  letter-spacing: 2rpx;
+}
+
 /* ==================== 桌面适配（B1–B3，仅 H5 编译，不进小程序包） ==================== */
 
 /* B1：内容限宽 1200px 居中（页面背景与 page 同色，视觉上铺满全宽） */

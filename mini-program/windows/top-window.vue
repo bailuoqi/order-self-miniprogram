@@ -7,7 +7,7 @@
   <view class="top-window">
     <view class="tw-inner">
       <view class="tw-brand" @click="go(navs[0])">
-        <text class="tw-brand-name">定制接单</text>
+        <text class="tw-brand-name">{{ brandName }}</text>
       </view>
       <view class="tw-nav">
         <view
@@ -30,6 +30,8 @@
 
 <script>
 import { useAuthStore } from "@/store/auth.js";
+import { api } from "@/api/request.js";
+import { pickBrandName } from "@/common/page-config.js";
 
 const NAVS = [
   { key: "home", title: "首页", url: "/pages/index/index", isTab: true },
@@ -59,7 +61,15 @@ export default {
       navs: NAVS,
       activeKey: "home",
       currentPagePath: "",
+      brandName: "定制接单",
     };
+  },
+  created() {
+    // 品牌名消费（二期 C1/U6）：读设置里的 brand_name，失败回退「定制接单」
+    api.get("/page-config/settings").then((raw) => {
+      const name = pickBrandName(raw);
+      if (name) this.brandName = name;
+    }).catch(() => {});
   },
   computed: {
     authStore() {
