@@ -632,6 +632,10 @@ const goProductDetail = (product) => uni.navigateTo({ url: '/subpkg/product/deta
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
     align-items: center;
+    align-content: center;
+    /* 兜底：小屏幕（screen ≤960 时 rpx 按屏宽换算）图标偏大时允许折行为 2x2，避免溢出裁切 */
+    flex-wrap: wrap;
+    row-gap: 12px;
   }
   .notice-bar {
     margin: 16px 0 0;
