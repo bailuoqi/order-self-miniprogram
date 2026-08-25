@@ -16,16 +16,16 @@
     <i class="ri-search-line"></i><span>{{p.placeholder||'搜索'}}</span>
   </div>
 
-  <!-- Notice Bar -->
+  <!-- Notice Bar：图标与客户端同规则走白名单回退 -->
   <div v-else-if="type==='notice'" class="cr-notice" :style="{background:p.bgColor,color:p.color}">
-    <i :class="p.ico||'ri-volume-up-line'"></i>
+    <i :class="resolveClientIcon(p.ico,'ri-volume-up-line')"></i>
     <span class="cr-notice-text">{{p.text}}</span>
   </div>
 
-  <!-- Nav Grid -->
+  <!-- Nav Grid：图标与客户端同规则走白名单回退 -->
   <div v-else-if="type==='navGrid'" class="cr-navgrid">
     <div v-for="(item,i) in p.items" :key="i" class="cr-navgrid-item" :style="{width:(100/(p.columns||4))+'%',padding:p.gutter+'px'}">
-      <div class="cr-navgrid-icon"><i :class="item.icon||'ri-apps-line'"></i></div>
+      <div class="cr-navgrid-icon"><i :class="resolveClientIcon(item.icon,'ri-apps-line')"></i></div>
       <div class="cr-navgrid-name">{{item.name}}</div>
     </div>
   </div>
@@ -45,31 +45,11 @@
     <img v-else :src="p.src" />
   </div>
 
-  <!-- Coupon -->
-  <div v-else-if="type==='coupon'" class="cr-coupon">
-    <div v-for="(c,i) in (p.coupons||[]).slice(0,p.showCount||3)" :key="i" class="cr-coupon-item" :class="'cr-coupon-'+p.style">
-      <div class="cr-coupon-left"><span class="cr-coupon-symbol">¥</span><span class="cr-coupon-amount">{{c.amount||0}}</span></div>
-      <div class="cr-coupon-right"><div class="cr-coupon-name">{{c.name||'优惠券'}}</div><div class="cr-coupon-cond">{{c.condition||'无门槛'}}</div></div>
-    </div>
-    <div v-if="!p.coupons||!p.coupons.length" class="cr-coupon-empty">暂无优惠券</div>
-  </div>
-
-  <!-- Countdown -->
-  <div v-else-if="type==='countdown'" class="cr-countdown" :style="{background:p.bgColor,color:p.color}">
-    <span class="cr-countdown-title">{{p.title}}</span>
-    <span class="cr-countdown-timer">00:00:00</span>
-  </div>
-
-  <!-- Group Buy -->
-  <div v-else-if="type==='groupBuy'" class="cr-groupbuy">
-    <div class="cr-groupbuy-title">{{p.title||'拼团活动'}}</div>
-    <div class="cr-groupbuy-grid"><div v-for="i in 3" :key="i" class="cr-groupbuy-item"><i class="ri-group-line"></i><span>拼团商品</span></div></div>
-  </div>
-
-  <!-- Seckill -->
-  <div v-else-if="type==='seckill'" class="cr-seckill">
-    <div class="cr-seckill-header"><span class="cr-seckill-title">{{p.title}}</span><span class="cr-seckill-timer">00:00</span></div>
-    <div class="cr-seckill-list"><div v-for="i in 2" :key="i" class="cr-seckill-item"><i class="ri-shopping-bag-3-line"></i><span>秒杀商品</span></div></div>
+  <!-- 已停用的营销组件（二期下架）：灰色占位，存量数据保留、客户端按未知类型跳过 -->
+  <div v-else-if="deprecatedLabel" class="cr-deprecated">
+    <i class="ri-forbid-line"></i>
+    <div class="cr-deprecated-name">已停用组件（客户端不渲染）</div>
+    <div class="cr-deprecated-tip">{{deprecatedLabel}} · 产品无此业务模型，可选中后删除；发布时数据原样保留</div>
   </div>
 
   <!-- Goods Row -->
@@ -84,7 +64,7 @@
             <span v-if="p.showBadge" class="cr-goods-badge">荐</span>
           </div>
           <div class="cr-goods-name">{{g.title}}</div>
-          <div class="cr-goods-price">¥{{g.price}}</div>
+          <div class="cr-goods-price">¥{{fmtPriceFen(g.price)}}</div>
         </div>
       </div>
       <div class="cr-goodsrow-grid" v-else :style="{gridTemplateColumns:'repeat('+(p.columns||2)+',1fr)'}">
@@ -95,7 +75,7 @@
             <span v-if="p.showBadge" class="cr-goods-badge">荐</span>
           </div>
           <div class="cr-goods-name">{{g.title}}</div>
-          <div class="cr-goods-price">¥{{g.price}}</div>
+          <div class="cr-goods-price">¥{{fmtPriceFen(g.price)}}</div>
         </div>
       </div>
     </template>
@@ -164,9 +144,15 @@
 <script setup>
 import { computed, ref, watch, onBeforeUnmount } from 'vue'
 import api from '@/api'
+import { resolveClientIcon } from '@/components/builder/client-icons'
+import { fmtPriceFen } from '@/components/builder/preview-format'
 
 const props = defineProps({ type: String, props: Object, global: Object, preview: Boolean })
 const p = computed(() => props.props || {})
+
+// 二期下架的营销组件：存量实例渲染停用占位（客户端按未知类型跳过）
+const DEPRECATED_LABELS = { coupon: '优惠券', countdown: '倒计时', groupBuy: '拼团', seckill: '秒杀' }
+const deprecatedLabel = computed(() => DEPRECATED_LABELS[props.type] || '')
 const wrapStyle = computed(() => {
   const s = {}
   if (p.value.marginTop) s.marginTop = p.value.marginTop + 'px'
@@ -237,29 +223,10 @@ watch(() => (props.type === 'articleList' ? p.value.cmsType : ''), async (t) => 
 .cr-imagead{background:#e8e8e8;overflow:hidden;margin:6px 0}
 .cr-imagead img{width:100%;height:100%;object-fit:cover;display:block}
 .cr-imagead-empty{display:flex;align-items:center;justify-content:center;height:100%;color:#bbb;gap:6px;font-size:13px}
-.cr-coupon{padding:8px 0}
-.cr-coupon-item{display:flex;margin-bottom:8px;border-radius:8px;overflow:hidden}
-.cr-coupon-card{border:1px solid #ff4d4f}
-.cr-coupon-left{background:#ff4d4f;color:#fff;padding:10px 14px;display:flex;align-items:center;gap:2px;min-width:70px;justify-content:center}
-.cr-coupon-symbol{font-size:12px}
-.cr-coupon-amount{font-size:22px;font-weight:700}
-.cr-coupon-right{flex:1;padding:10px;background:#fff;border:1px solid #ff4d4f;border-left:none}
-.cr-coupon-name{font-size:13px;font-weight:600;color:#333}
-.cr-coupon-cond{font-size:11px;color:#999}
-.cr-coupon-empty{text-align:center;color:#bbb;font-size:12px;padding:12px}
-.cr-countdown{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:8px;font-size:14px;margin:6px 0}
-.cr-countdown-timer{font-weight:700;font-size:16px}
-.cr-groupbuy{padding:10px 0}
-.cr-groupbuy-title{font-size:15px;font-weight:700;margin-bottom:8px}
-.cr-groupbuy-grid{display:flex;gap:8px}
-.cr-groupbuy-item{flex:1;background:#f5f5f5;border-radius:8px;padding:20px 10px;text-align:center;color:#999;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:6px}
-.cr-groupbuy-item i{font-size:22px}
-.cr-seckill{padding:10px 0}
-.cr-seckill-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-.cr-seckill-title{font-size:15px;font-weight:700;color:#ff4d4f}
-.cr-seckill-timer{background:#333;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px}
-.cr-seckill-list{display:flex;gap:8px}
-.cr-seckill-item{flex:1;background:#f5f5f5;border-radius:8px;padding:16px 8px;text-align:center;color:#999;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.cr-deprecated{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:18px 12px;background:#f5f5f5;border:1px dashed #d9d9d9;border-radius:8px;margin:6px 0;text-align:center}
+.cr-deprecated i{font-size:22px;color:#bbb}
+.cr-deprecated-name{font-size:12px;font-weight:600;color:#999}
+.cr-deprecated-tip{font-size:10px;color:#bbb;line-height:1.5}
 .cr-goodsrow{padding:6px 0}
 .cr-goodsrow-title{font-size:15px;font-weight:700;margin-bottom:8px}
 .cr-goodsrow-scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}

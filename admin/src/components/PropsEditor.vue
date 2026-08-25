@@ -1,13 +1,22 @@
 <template>
 <div class="pe-root">
-  <!-- ====== Common Fields ====== -->
-  <div class="pe-section"><div class="pe-section-title">间距</div>
+  <!-- ====== Common Fields（已停用组件不可编辑属性） ====== -->
+  <div v-if="!isDeprecatedType" class="pe-section"><div class="pe-section-title">间距</div>
     <div class="pe-row"><label>上边距</label><input type="number" v-model.number="comp.props.marginTop" class="pe-input" placeholder="0" @input="emitChange" /> px</div>
     <div class="pe-row"><label>下边距</label><input type="number" v-model.number="comp.props.marginBottom" class="pe-input" placeholder="0" @input="emitChange" /> px</div>
   </div>
 
+  <!-- ====== 已停用的营销组件（二期下架，属性不可编辑） ====== -->
+  <template v-if="isDeprecatedType">
+    <div class="pe-deprecated">
+      <i class="ri-forbid-line"></i>
+      <p><strong>该组件已停用（客户端不渲染）</strong></p>
+      <p>营销类组件（优惠券 / 倒计时 / 拼团 / 秒杀）无后端业务模型支撑，二期已从组件库下架。属性不可编辑；可在画布或图层列表中选中后删除，发布时存量数据原样保留。</p>
+    </div>
+  </template>
+
   <!-- ====== Banner ====== -->
-  <template v-if="comp.type==='banner'">
+  <template v-else-if="comp.type==='banner'">
     <div class="pe-section"><div class="pe-section-title">轮播图</div>
       <div class="pe-row"><label>高度</label><input type="number" v-model.number="comp.props.height" class="pe-input" min="60" max="400" @input="emitChange" /> px</div>
       <div class="pe-row"><label>圆角</label><input type="number" v-model.number="comp.props.radius" class="pe-input" min="0" max="40" @input="emitChange" /> px</div>
@@ -31,6 +40,7 @@
       <div class="pe-row" style="flex-direction:column;align-items:flex-start"><label>热搜词 (逗号分隔)</label>
         <input v-model="hotWordsText" class="pe-input" style="width:100%" placeholder="关键词1,关键词2" @input="parseHotWords" />
       </div>
+      <div class="pe-hint">热搜词客户端暂不消费，仅在配置中留存</div>
     </div>
   </template>
 
@@ -38,10 +48,10 @@
   <template v-else-if="comp.type==='notice'">
     <div class="pe-section"><div class="pe-section-title">公告栏</div>
       <div class="pe-row"><label>公告文字</label><input v-model="comp.props.text" class="pe-input" @input="emitChange" /></div>
-      <div class="pe-row"><label>图标</label><input v-model="comp.props.ico" class="pe-input" @input="emitChange" /></div>
+      <div class="pe-row"><label>图标</label><IconPicker v-model="comp.props.ico" @change="emitChange" /></div>
       <div class="pe-row"><label>背景色</label><div class="pe-color-row"><input type="color" v-model="comp.props.bgColor" class="pe-color" @input="emitChange" /><input v-model="comp.props.bgColor" class="pe-input" style="flex:1" @input="emitChange" /></div></div>
       <div class="pe-row"><label>文字色</label><div class="pe-color-row"><input type="color" v-model="comp.props.color" class="pe-color" @input="emitChange" /><input v-model="comp.props.color" class="pe-input" style="flex:1" @input="emitChange" /></div></div>
-      <div class="pe-row"><label>滚动速度</label><input type="number" v-model.number="comp.props.speed" class="pe-input" @input="emitChange" /></div>
+      <div class="pe-hint">客户端为单行省略展示（不做跑马灯滚动），图标限客户端白名单</div>
     </div>
   </template>
 
@@ -52,11 +62,12 @@
       <div class="pe-row"><label>间距</label><input type="number" v-model.number="comp.props.gutter" class="pe-input" @input="emitChange" /> px</div>
       <div v-for="(item,i) in (comp.props.items||[])" :key="i" class="pe-item-block">
         <div class="pe-item-header">导航 {{i+1}} <button class="pe-item-del" @click="removeNavItem(i)">x</button></div>
-        <div class="pe-row"><label>图标</label><input v-model="item.icon" class="pe-input" @input="emitChange" /></div>
+        <div class="pe-row"><label>图标</label><IconPicker v-model="item.icon" @change="emitChange" /></div>
         <div class="pe-row"><label>名称</label><input v-model="item.name" class="pe-input" @input="emitChange" /></div>
         <div class="pe-row"><label>链接</label><input v-model="item.link" class="pe-input" @input="emitChange" /></div>
       </div>
       <button class="pe-add-btn" @click="addNavItem">+ 添加导航项</button>
+      <div class="pe-hint">图标限客户端白名单；白名单外的存量图标客户端将回退显示</div>
     </div>
   </template>
 
@@ -85,42 +96,6 @@
     </div>
   </template>
 
-  <!-- ====== Coupon ====== -->
-  <template v-else-if="comp.type==='coupon'">
-    <div class="pe-section"><div class="pe-section-title">优惠券</div>
-      <div class="pe-row"><label>样式</label><select v-model="comp.props.style" class="pe-input" @change="emitChange">
-        <option value="card">卡片式</option><option value="list">列表式</option>
-      </select></div>
-      <div class="pe-row"><label>显示数量</label><input type="number" v-model.number="comp.props.showCount" class="pe-input" @input="emitChange" min="1" max="6" /></div>
-    </div>
-  </template>
-
-  <!-- ====== Countdown ====== -->
-  <template v-else-if="comp.type==='countdown'">
-    <div class="pe-section"><div class="pe-section-title">倒计时</div>
-      <div class="pe-row"><label>标题</label><input v-model="comp.props.title" class="pe-input" @input="emitChange" /></div>
-      <div class="pe-row"><label>结束时间</label><input type="datetime-local" v-model="comp.props.endTime" class="pe-input" @input="emitChange" /></div>
-      <div class="pe-row"><label>背景色</label><div class="pe-color-row"><input type="color" v-model="comp.props.bgColor" class="pe-color" @input="emitChange" /><input v-model="comp.props.bgColor" class="pe-input" style="flex:1" @input="emitChange" /></div></div>
-      <div class="pe-row"><label>文字色</label><div class="pe-color-row"><input type="color" v-model="comp.props.color" class="pe-color" @input="emitChange" /><input v-model="comp.props.color" class="pe-input" style="flex:1" @input="emitChange" /></div></div>
-    </div>
-  </template>
-
-  <!-- ====== GroupBuy ====== -->
-  <template v-else-if="comp.type==='groupBuy'">
-    <div class="pe-section"><div class="pe-section-title">拼团</div>
-      <div class="pe-row"><label>标题</label><input v-model="comp.props.title" class="pe-input" @input="emitChange" /></div>
-    </div>
-  </template>
-
-  <!-- ====== Seckill ====== -->
-  <template v-else-if="comp.type==='seckill'">
-    <div class="pe-section"><div class="pe-section-title">秒杀</div>
-      <div class="pe-row"><label>标题</label><input v-model="comp.props.title" class="pe-input" @input="emitChange" /></div>
-      <div class="pe-row"><label>显示价格</label><label class="pe-switch"><input type="checkbox" v-model="comp.props.showPrice" @change="emitChange" /></label></div>
-      <div class="pe-row"><label>显示进度</label><label class="pe-switch"><input type="checkbox" v-model="comp.props.showProgress" @change="emitChange" /></label></div>
-    </div>
-  </template>
-
   <!-- ====== GoodsRow ====== -->
   <template v-else-if="comp.type==='goodsRow'">
     <div class="pe-section"><div class="pe-section-title">商品行</div>
@@ -137,7 +112,7 @@
         <div v-for="(g,i) in comp.props.goods" :key="g.id" class="pe-goods-item">
           <span class="pe-goods-cover"><img v-if="g.cover" :src="g.cover" /><i v-else class="ri-image-line"></i></span>
           <span class="pe-goods-title">{{g.title}}</span>
-          <span class="pe-goods-price">¥{{g.price}}</span>
+          <span class="pe-goods-price">¥{{fmtPriceFen(g.price)}}</span>
           <button type="button" class="pe-item-del" title="移除" @click="removeGoods(i)">x</button>
         </div>
       </div>
@@ -149,6 +124,7 @@
   <!-- ====== ArticleList ====== -->
   <template v-else-if="comp.type==='articleList'">
     <div class="pe-section"><div class="pe-section-title">文章列表</div>
+      <div class="pe-noclient"><i class="ri-eye-off-line"></i> 客户端首页不渲染该组件，仅后台画布展示</div>
       <div class="pe-row"><label>标题</label><input v-model="comp.props.title" class="pe-input" @input="emitChange" /></div>
       <div class="pe-row"><label>数据来源</label><select v-model="comp.props.cmsType" class="pe-input" @change="emitChange">
         <option value="">占位演示（不绑定）</option>
@@ -167,6 +143,7 @@
   <!-- ====== VideoPlayer ====== -->
   <template v-else-if="comp.type==='videoPlayer'">
     <div class="pe-section"><div class="pe-section-title">视频</div>
+      <div class="pe-noclient"><i class="ri-eye-off-line"></i> 客户端首页不渲染该组件，仅后台画布展示</div>
       <div class="pe-row"><label>视频URL</label><input v-model="comp.props.src" class="pe-input" @input="emitChange" /></div>
       <div class="pe-row" style="flex-direction:column;align-items:flex-start"><label>视频封面</label>
         <ImageUploader v-model="comp.props.poster" @change="emitChange" />
@@ -190,6 +167,7 @@
   <!-- ====== FloatingBtn ====== -->
   <template v-else-if="comp.type==='floatingBtn'">
     <div class="pe-section"><div class="pe-section-title">悬浮按钮</div>
+      <div class="pe-noclient"><i class="ri-eye-off-line"></i> 客户端首页不渲染该组件，仅后台画布展示</div>
       <div class="pe-row"><label>文字</label><input v-model="comp.props.text" class="pe-input" @input="emitChange" /></div>
       <div class="pe-row"><label>图标</label><input v-model="comp.props.ico" class="pe-input" @input="emitChange" /></div>
       <div class="pe-row"><label>位置</label><select v-model="comp.props.position" class="pe-input" @change="emitChange">
@@ -222,9 +200,11 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import ImageUploader from '@/components/builder/ImageUploader.vue'
 import ProductPicker from '@/components/builder/ProductPicker.vue'
+import IconPicker from '@/components/builder/IconPicker.vue'
+import { fmtPriceFen } from '@/components/builder/preview-format'
 
 const props = defineProps({ comp: Object })
 const emit = defineEmits(['change'])
@@ -232,6 +212,10 @@ const emit = defineEmits(['change'])
 const imagesText = ref('')
 const hotWordsText = ref('')
 const showProductPicker = ref(false)
+
+// 二期下架的营销组件：属性不可编辑，仅提示可删除
+const DEPRECATED_TYPES = ['coupon', 'countdown', 'groupBuy', 'seckill']
+const isDeprecatedType = computed(() => DEPRECATED_TYPES.includes(props.comp?.type))
 
 function emitChange() {
   emit('change')
@@ -319,4 +303,8 @@ watch(() => props.comp?.props?.hotWords, (words) => {
 .pe-goods-title{flex:1;color:#333;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .pe-goods-price{color:#ff4d4f;font-weight:600;flex-shrink:0}
 .pe-none{padding:20px;text-align:center;color:#bbb}
+.pe-deprecated{background:#fafafa;border:1px dashed #d9d9d9;border-radius:8px;padding:16px 12px;text-align:center;color:#999;line-height:1.7}
+.pe-deprecated i{font-size:24px;color:#bbb}
+.pe-deprecated p{margin:6px 0 0}
+.pe-noclient{display:flex;align-items:center;gap:5px;background:#f5f5f5;border-radius:6px;padding:6px 8px;font-size:11px;color:#999;margin-bottom:8px;line-height:1.5}
 </style>
