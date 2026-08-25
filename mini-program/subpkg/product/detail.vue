@@ -2,7 +2,11 @@
   <view class="page-detail" v-if="product">
     <!-- 封面 -->
     <view class="img-wrap">
-      <image class="cover-img" :src="product.cover" mode="aspectFill" />
+      <image v-if="product.cover" class="cover-img" :src="product.cover" mode="aspectFill" />
+      <view v-else class="cover-img cover-img--holder">
+        <i :class="'ri-' + productIconName(product)" />
+        <text class="cover-holder-text">{{ product.category ? product.category.name : '定制服务' }}</text>
+      </view>
     </view>
 
     <!-- 价格&标题 -->
@@ -39,6 +43,25 @@
         <text class="flow-step">交付结尾款</text>
       </view>
       <text class="flow-note">页面价格为参考起价，实际以团队按需求报价为准</text>
+    </view>
+
+    <!-- 服务保障 -->
+    <view class="guarantee-card">
+      <view class="card-title">
+        <i class="ri-shield-check-line" style="font-size:34rpx;color:#2979FF;" />
+        <text>服务保障</text>
+      </view>
+      <view class="guarantee-grid">
+        <view class="g-item" v-for="g in guarantees" :key="g.title">
+          <view class="g-icon-box">
+            <i :class="'ri-' + g.icon" style="font-size:36rpx;color:#2979FF;" />
+          </view>
+          <view class="g-texts">
+            <text class="g-title">{{ g.title }}</text>
+            <text class="g-desc">{{ g.desc }}</text>
+          </view>
+        </view>
+      </view>
     </view>
 
     <!-- 服务说明 -->
@@ -91,11 +114,13 @@ import { onLoad } from '@dcloudio/uni-app';
 import { useProductStore } from '@/store/product.js';
 import { useAuthStore } from '@/store/auth.js';
 import { api } from '@/api/request.js';
+import { productIconName, GUARANTEES } from '@/common/browse.js';
 
 const productStore = useProductStore();
 const authStore = useAuthStore();
 const product = ref(null);
 const reviews = ref([]);
+const guarantees = GUARANTEES;
 
 onLoad(async (options) => {
   try {
@@ -133,6 +158,9 @@ const goConsult = () => uni.navigateTo({ url: '/subpkg/my/about' });
 
 .img-wrap { position: relative; }
 .cover-img { width: 750rpx; height: 420rpx; display: block; background: linear-gradient(135deg, #E3F2FD, #BBDEFB); }
+/* 无封面时用分类图标 + 分类名占位 */
+.cover-img--holder { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16rpx; font-size: 120rpx; color: rgba(41,121,255,0.4); }
+.cover-holder-text { font-size: 26rpx; color: rgba(21,101,192,0.55); font-weight: 600; letter-spacing: 2rpx; }
 
 .price-card {
   background: #fff;
@@ -157,13 +185,21 @@ const goConsult = () => uni.navigateTo({ url: '/subpkg/my/about' });
 .tags { display: flex; gap: 14rpx; margin-top: 18rpx; padding-top: 18rpx; border-top: 1rpx solid #f0f0f0; }
 .tag { font-size: 22rpx; color: #1565C0; background: #E3F2FD; padding: 6rpx 16rpx; border-radius: 8rpx; display: flex; align-items: center; gap: 4rpx; }
 
-.flow-card, .desc-card, .review-card { background: #fff; margin: 0 24rpx 16rpx; padding: 28rpx; border-radius: 20rpx; }
+.flow-card, .guarantee-card, .desc-card, .review-card { background: #fff; margin: 0 24rpx 16rpx; padding: 28rpx; border-radius: 20rpx; }
 .card-title { display: flex; align-items: center; gap: 12rpx; font-size: 30rpx; font-weight: 700; margin-bottom: 20rpx; }
 .flow-steps { display: flex; align-items: center; flex-wrap: wrap; gap: 8rpx; }
 .flow-step { background: #E3F2FD; color: #1565C0; font-size: 24rpx; padding: 10rpx 20rpx; border-radius: 10rpx; font-weight: 600; }
 .flow-arrow { color: #999; font-size: 24rpx; }
 .flow-note { display: block; margin-top: 16rpx; font-size: 22rpx; color: #999; }
 .desc-content { font-size: 28rpx; line-height: 1.8; color: #666; white-space: pre-line; }
+
+/* 服务保障 */
+.guarantee-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20rpx 16rpx; }
+.g-item { display: flex; align-items: flex-start; gap: 14rpx; }
+.g-icon-box { width: 60rpx; height: 60rpx; border-radius: 14rpx; background: #E3F2FD; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.g-texts { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4rpx; }
+.g-title { font-size: 26rpx; font-weight: 700; color: #1A1A2E; }
+.g-desc { font-size: 22rpx; color: #999; line-height: 1.5; }
 
 .review-item { padding: 24rpx 0; border-bottom: 1rpx solid #f0f0f0; }
 .review-item:last-child { border-bottom: none; padding-bottom: 0; }
@@ -226,16 +262,17 @@ const goConsult = () => uni.navigateTo({ url: '/subpkg/my/about' });
 }
 
 @include screen-desktop-up {
-  /* ≥1200px：封面（左 46%）与价格卡+流程卡（右 54%）双栏，说明与评价通栏；
+  /* ≥1200px：封面（左 46%）与价格卡+流程卡（右 54%）双栏，保障/说明/评价通栏；
      grid-template-areas 只给现有卡片指定区域，不改 DOM 顺序 */
   .page-detail {
     display: grid;
     grid-template-columns: minmax(0, 46fr) minmax(0, 54fr);
     grid-template-areas:
-      "cover  price"
-      "cover  flow"
-      "desc   desc"
-      "review review";
+      "cover     price"
+      "cover     flow"
+      "guarantee guarantee"
+      "desc      desc"
+      "review    review";
     gap: 20px 24px;
     align-content: start;
     padding: 20px 24px 110px;
@@ -257,6 +294,15 @@ const goConsult = () => uni.navigateTo({ url: '/subpkg/my/about' });
     grid-area: flow;
     margin: 0;
     align-self: start;
+  }
+  .guarantee-card {
+    grid-area: guarantee;
+    margin: 0;
+  }
+  /* 通栏保障卡一行四项 */
+  .guarantee-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
   }
   .desc-card {
     grid-area: desc;
