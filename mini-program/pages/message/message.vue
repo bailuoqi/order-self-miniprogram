@@ -14,6 +14,9 @@
       <view class="msg-badge" v-if="s.user_unread">{{ s.user_unread }}</view>
     </view>
     <view v-if="!sessions.length" class="empty">
+      <view class="empty-icon-box">
+        <i class="ri-chat-3-line" style="font-size:64rpx;color:#C5CAD6;" />
+      </view>
       <text>暂无消息</text>
       <text class="empty-sub">下单后可在订单详情中「联系团队」商议报价</text>
     </view>
@@ -55,7 +58,8 @@ const goRoom = (s) => {
 .msg-time { font-size: 22rpx; color: var(--text-light); flex-shrink: 0; }
 .msg-desc { font-size: 24rpx; color: var(--text-light); margin-top: 6rpx; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 .msg-badge { min-width: 32rpx; height: 32rpx; line-height: 32rpx; text-align: center; background: var(--danger); color: #fff; font-size: 20rpx; border-radius: 16rpx; padding: 0 8rpx; flex-shrink: 0; }
-.empty { text-align: center; padding: 120rpx 40rpx; color: var(--text-light); display: flex; flex-direction: column; gap: 12rpx; }
+.empty { text-align: center; padding: 120rpx 40rpx; color: var(--text-light); display: flex; flex-direction: column; align-items: center; gap: 12rpx; }
+.empty-icon-box { width: 128rpx; height: 128rpx; border-radius: 50%; background: #F0F2F7; display: flex; align-items: center; justify-content: center; margin-bottom: 8rpx; }
 .empty-sub { font-size: 22rpx; color: #ccc; }
 
 /* #ifdef H5 */

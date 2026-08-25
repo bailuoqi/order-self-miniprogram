@@ -74,7 +74,7 @@
     <view class="section">
       <view class="section-header">
         <text class="section-title">
-          <text class="section-emoji">🔥</text>热门标准服务
+          <i class="ri-fire-line section-title-icon" style="color:#FF6D00;" />热门标准服务
         </text>
         <view class="section-more clickable" @click="goProductList()">
           <text>更多</text>
@@ -85,7 +85,7 @@
         <view class="product-scroll-inner">
           <view class="product-card hover-lift" v-for="product in hotProducts" :key="product.id" @click="goProductDetail(product)">
             <view class="product-img-wrap">
-              <image class="product-img" :src="product.cover" mode="aspectFill" />
+              <image class="product-img" :src="product.cover || '/static/images/cover-default.png'" mode="aspectFill" />
               <view class="product-badge" v-if="product.tags && product.tags[0]">{{ product.tags[0] }}</view>
             </view>
             <view class="product-info">
@@ -108,7 +108,7 @@
     <view class="section" v-if="reviews.length">
       <view class="section-header">
         <text class="section-title">
-          <text class="section-emoji">⭐</text>客户评价
+          <i class="ri-star-smile-line section-title-icon" style="color:#FF9100;" />客户评价
         </text>
       </view>
       <view class="review-list">
@@ -417,8 +417,10 @@ const goProductDetail = (product) => uni.navigateTo({ url: '/subpkg/product/deta
   font-weight: 700;
   color: #1A1A2E;
 }
-.section-emoji {
+.section-title-icon {
   margin-right: 8rpx;
+  font-size: 32rpx;
+  vertical-align: -2rpx;
 }
 .section-more {
   display: flex;

@@ -20,7 +20,7 @@
     <scroll-view scroll-y class="main-content">
       <view class="product-list">
         <view class="product-item hover-lift" v-for="p in products" :key="p.id" @click="goDetail(p)">
-          <image class="p-img" :src="p.cover" mode="aspectFill" />
+          <image class="p-img" :src="p.cover || '/static/images/cover-default.png'" mode="aspectFill" />
           <view class="p-info">
             <text class="p-name text-ellipsis-2">{{ p.title }}</text>
             <view class="p-tags">
@@ -39,6 +39,9 @@
       </view>
 
       <view v-if="!products.length" class="empty">
+        <view class="empty-icon-box">
+          <i class="ri-inbox-line" style="font-size:64rpx;color:#C5CAD6;" />
+        </view>
         <text>该品类暂无标准服务</text>
         <view class="btn-custom clickable" @click="goCustom">发布自定义需求 ›</view>
       </view>
@@ -107,6 +110,7 @@ const goCustom = () => uni.navigateTo({ url: '/subpkg/order/create-custom' });
 .p-price { .symbol { color: var(--danger); font-size: 24rpx; font-weight: 700; } .value { color: var(--danger); font-size: 34rpx; font-weight: 700; } .unit { color: var(--text-light); font-size: 22rpx; } }
 .p-sold { font-size: 22rpx; color: var(--text-light); }
 .empty { text-align: center; padding: 100rpx 0; color: var(--text-light); display: flex; flex-direction: column; gap: 20rpx; align-items: center; }
+.empty-icon-box { width: 128rpx; height: 128rpx; border-radius: 50%; background: #F0F2F7; display: flex; align-items: center; justify-content: center; }
 .btn-custom { color: var(--primary); font-size: 26rpx; font-weight: 600; }
 
 /* #ifdef H5 */
