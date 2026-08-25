@@ -138,8 +138,13 @@ const statusColor = (s) => ORDER_STATUS_COLOR[s] || '#999';
 }
 
 @include screen-tablet-up {
-  /* 顶栏/页头出现后按 --window-top 扣除高度，避免内外双滚动条 */
-  .page-order-list { height: calc(100vh - var(--window-top)); }
+  /* 宽屏下页面被框架放进扣除 topWindow 的 uni-content 容器里，而 --window-top 只含页头高度，
+     需同时扣掉 --top-window-height（uni-h5 注入在 :root），否则页面超高出现外层滚动条 */
+  .page-order-list { height: calc(100vh - var(--window-top) - var(--top-window-height, 0px)); }
+
+  /* 放开 flex 子项 min-height:auto 的内容撑高，让列表滚动发生在 scroll-view 内部，
+     桌面滚轮才能触底触发 scrolltolower 加载更多（任务 C3 验证项） */
+  .order-list { min-height: 0; }
 
   .tabs { text-align: center; }
   .tab-item { padding: 28rpx 36rpx; }

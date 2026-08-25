@@ -351,7 +351,8 @@ const applyRefund = () => {
 /* ≥1200px：grid-template-areas 双栏重排（只给现有卡片指定区域，不改 DOM 顺序，规划书 §4.7）。
    左栏 62%：需求信息 / 交付成果 / 我的评价 / 订单信息；
    右栏 38%：团队报价卡 / 操作卡 / 订单进度时间线。
-   条件渲染缺失的卡片（未交付、未评价等）对应区域由 grid 自动收缩。 */
+   报价卡跨左栏的条件渲染行（交付/评价缺失时对应行高自动收缩），
+   操作卡与订单信息同行、时间线收尾，减少稀疏状态下的左栏空档（1366 走查调优）。 */
 @include screen-desktop-up {
   .page-order-detail {
     display: grid;
@@ -359,9 +360,9 @@ const applyRefund = () => {
     grid-template-areas:
       "banner banner"
       "require quote"
-      "deliver actions"
-      "review logs"
-      "info logs"
+      "deliver quote"
+      "review quote"
+      "info actions"
       ". logs";
     align-items: start;
     align-content: start;
