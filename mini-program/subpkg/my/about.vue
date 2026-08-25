@@ -19,7 +19,7 @@
     <view class="contact card">
       <view class="contact-item">
         <text class="ci-label">客服电话</text>
-        <text class="ci-value link" @click="callPhone">400-888-8888</text>
+        <text class="ci-value link clickable" @click="callPhone">400-888-8888</text>
       </view>
       <view class="contact-item">
         <text class="ci-label">客服邮箱</text>
@@ -55,4 +55,16 @@ const callPhone = () => uni.makePhoneCall({ phoneNumber: "4008888888" });
 .ci-value { font-size: 28rpx; }
 .ci-value.link { color: var(--primary); }
 .copyright { font-size: 24rpx; color: var(--text-light); padding: 40rpx 0; display: block; }
+
+/* #ifdef H5 */
+/* ==================== 桌面适配（规划书 §4.13 / 任务 D5，仅 H5 编译，不进小程序包） ==================== */
+/* 品牌卡、介绍卡、联系卡统一居中 760px */
+.logo-area { @include content-limit($content-max-form); }
+.info { @include content-limit($content-max-form); }
+.contact { @include content-limit($content-max-form); }
+
+@media (min-width: $bp-tablet) {
+  .page-about { padding: 24px 20px; }
+}
+/* #endif */
 </style>
