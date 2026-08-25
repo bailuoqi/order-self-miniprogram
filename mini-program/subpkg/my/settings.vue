@@ -2,7 +2,7 @@
   <view class="page-settings">
     <view class="menu card">
       <view class="menu-item clickable" @click="editProfile">
-        <view class="ri-tab-my" style="font-size:36rpx;" /><text class="mi-label">个人信息</text><view class="ri-arrow-right-s-line" style="font-size:32rpx;" />
+        <view class="ri-user-3-line" style="font-size:36rpx;" /><text class="mi-label">个人信息</text><view class="ri-arrow-right-s-line" style="font-size:32rpx;" />
       </view>
       <view class="menu-item clickable" @click="goAddress">
         <view class="ri-map-pin-2-line" style="font-size:36rpx;" /><text class="mi-label">地址管理</text><view class="ri-arrow-right-s-line" style="font-size:32rpx;" />
