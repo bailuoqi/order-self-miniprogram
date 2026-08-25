@@ -1,0 +1,11 @@
+---
+description: 强制：每次任务必须派发云端子代理执行（见 AGENTS.md）
+alwaysApply: true
+---
+
+每次执行任务都必须遵守根目录 `AGENTS.md`，**无任何例外**（包括文档改动、微小编辑、提醒类请求、main agent 自认为能快速完成的工作）：
+
+- 必须通过 Task 工具派生**云端子代理**执行任务：`environment: cloud`，`model: claude-fable-5-thinking-xhigh`（模型 slug：`Claude Fable 5 Thinking Extra High`）。
+- main agent 只负责拆分与派发任务；**禁止**自行分析、实现、审查、测试、提交或收尾。
+- 可无限并行派发子代理，忽略成本；只优化效率与质量，必要时追加、续跑或复核，直到质量达标。
+- 若协议被违反，必须立即停止并按协议重新派发子代理执行。
