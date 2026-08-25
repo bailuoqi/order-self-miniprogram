@@ -25,4 +25,43 @@ export const ORDER_STATUS_TAG = {
   refunded: 'tag-red',
 }
 
+/** 订单来源（server OrderSource：product=标准服务下单 / custom=自定义需求） */
+export const ORDER_SOURCE_MAP = {
+  product: '标准服务',
+  custom: '自定义',
+}
+
+export const ORDER_SOURCE_TAG = {
+  product: 'tag-blue',
+  custom: 'tag-orange',
+}
+
+/** 退款状态（server RefundStatus） */
+export const REFUND_STATUS_MAP = {
+  pending: '待审核',
+  approved: '已通过',
+  rejected: '已拒绝',
+  completed: '已完成',
+}
+
+export const REFUND_STATUS_TAG = {
+  pending: 'tag-orange',
+  approved: 'tag-green',
+  rejected: 'tag-red',
+  completed: 'tag-green',
+}
+
 export const fmtFen = (fen) => ((fen || 0) / 100).toFixed(2)
+
+/** 文件大小可读化：1024 → 1KB */
+export const fmtBytes = (bytes) => {
+  const n = +bytes
+  if (!n || n <= 0) return ''
+  if (n < 1024) return n + 'B'
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + 'KB'
+  return (n / 1024 / 1024).toFixed(1) + 'MB'
+}
+
+/** 判断内容是否为站内上传的图片 URL（聊天消息降级渲染缩略图用） */
+export const isUploadImageUrl = (s) =>
+  typeof s === 'string' && /^\/uploads\/[^\s]+\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(s.trim())
