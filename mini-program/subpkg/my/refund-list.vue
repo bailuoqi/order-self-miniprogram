@@ -1,6 +1,6 @@
 <template>
   <view class="page-refund">
-    <view class="refund-item card" v-for="r in refunds" :key="r.id" @click="goDetail(r)">
+    <view class="refund-item card hover-lift" v-for="r in refunds" :key="r.id" @click="goDetail(r)">
       <view class="ri-header">
         <text class="ri-order">退款单：{{ r.refund_no }}</text>
         <text class="ri-status" :style="{ color: statusColor(r.status) }">{{ statusMap[r.status] || r.status }}</text>
@@ -52,4 +52,16 @@ const fmtPrice = (fen) => (fen / 100).toFixed(2);
 .ri-reason { font-size: 22rpx; color: var(--text-light); display: block; margin-top: 6rpx; }
 .ri-amount { font-size: 28rpx; color: var(--danger); font-weight: 700; }
 .empty { text-align: center; padding: 100rpx; color: var(--text-light); }
+
+/* #ifdef H5 */
+/* ==================== 桌面适配（规划书 §4.13 / 任务 D5，仅 H5 编译，不进小程序包） ==================== */
+/* 退款卡与空态统一居中 760px */
+.refund-item { @include content-limit($content-max-form); }
+.empty { @include content-limit($content-max-form); }
+
+@media (min-width: $bp-tablet) {
+  /* 100vh 未扣页头与 topWindow 高度会使短内容页凭空多出约 105px 空滚动 */
+  .page-refund { padding: 24px 20px; min-height: calc(100vh - var(--window-top) - var(--top-window-height, 0px)); box-sizing: border-box; }
+}
+/* #endif */
 </style>

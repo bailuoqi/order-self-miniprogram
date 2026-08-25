@@ -21,7 +21,7 @@
           <!-- #endif -->
         </view>
         <!-- 已登录 -->
-        <view class="user-card" v-else @click="goEditProfile">
+        <view class="user-card clickable" v-else @click="goEditProfile">
           <image class="uc-avatar" :src="userInfo.avatar || '/static/icons/default-avatar.png'" mode="aspectFill" />
           <view class="uc-info">
             <text class="uc-name">{{ userInfo.nickname }}</text>
@@ -34,22 +34,22 @@
 
         <!-- 订单统计 -->
         <view class="header-stats" v-if="isLogin">
-          <view class="stat-item" @click="goOrders('pending_quote,quoting')">
+          <view class="stat-item clickable" @click="goOrders('pending_quote,quoting')">
             <text class="stat-num">{{ stats.quoting }}</text>
             <text class="stat-label">待报价</text>
           </view>
           <view class="stat-divider" />
-          <view class="stat-item" @click="goOrders('confirmed,delivered')">
+          <view class="stat-item clickable" @click="goOrders('confirmed,delivered')">
             <text class="stat-num">{{ stats.toPay }}</text>
             <text class="stat-label">待付款</text>
           </view>
           <view class="stat-divider" />
-          <view class="stat-item" @click="goOrders('deposit_paid')">
+          <view class="stat-item clickable" @click="goOrders('deposit_paid')">
             <text class="stat-num">{{ stats.making }}</text>
             <text class="stat-label">制作中</text>
           </view>
           <view class="stat-divider" />
-          <view class="stat-item" @click="goOrders('')">
+          <view class="stat-item clickable" @click="goOrders('')">
             <text class="stat-num">{{ stats.total }}</text>
             <text class="stat-label">全部订单</text>
           </view>
@@ -61,19 +61,19 @@
     <view class="section">
       <view class="section-title">服务</view>
       <view class="menu-grid">
-        <view class="menu-item" @click="goPage('/subpkg/order/create-custom')">
+        <view class="menu-item hover-lift" @click="goPage('/subpkg/order/create-custom')">
           <i class="ri-add-circle-line menu-icon" style="color:#2979FF;" />
           <text class="menu-text">发布需求</text>
         </view>
-        <view class="menu-item" @click="goCategory">
+        <view class="menu-item hover-lift" @click="goCategory">
           <i class="ri-file-list-3-line menu-icon" style="color:#FF6D00;" />
           <text class="menu-text">标准服务</text>
         </view>
-        <view class="menu-item" @click="goPage('/subpkg/my/join-us')">
+        <view class="menu-item hover-lift" @click="goPage('/subpkg/my/join-us')">
           <i class="ri-team-line menu-icon" style="color:#00C853;" />
           <text class="menu-text">加入我们</text>
         </view>
-        <view class="menu-item" @click="goAbout">
+        <view class="menu-item hover-lift" @click="goAbout">
           <i class="ri-customer-service-2-line menu-icon" style="color:#AA00FF;" />
           <text class="menu-text">联系客服</text>
         </view>
@@ -83,15 +83,15 @@
     <view class="section">
       <view class="section-title">其他</view>
       <view class="menu-list">
-        <view class="menu-row" @click="goPage('/subpkg/my/refund-list')">
+        <view class="menu-row clickable" @click="goPage('/subpkg/my/refund-list')">
           <text>退款记录</text>
           <i class="ri-arrow-right-s-line" />
         </view>
-        <view class="menu-row" @click="goPage('/subpkg/my/settings')">
+        <view class="menu-row clickable" @click="goPage('/subpkg/my/settings')">
           <text>设置</text>
           <i class="ri-arrow-right-s-line" />
         </view>
-        <view class="menu-row" @click="goAbout">
+        <view class="menu-row clickable" @click="goAbout">
           <text>关于我们</text>
           <i class="ri-arrow-right-s-line" />
         </view>
@@ -208,4 +208,28 @@ const goEditProfile = () => uni.navigateTo({ url: '/subpkg/my/settings' });
 .menu-list { background: #fff; border-radius: 16rpx; overflow: hidden; }
 .menu-row { display: flex; justify-content: space-between; align-items: center; padding: 28rpx 32rpx; font-size: 28rpx; color: var(--text-main); border-bottom: 1rpx solid var(--border); }
 .menu-row:last-child { border-bottom: none; }
+
+/* #ifdef H5 */
+/* ==================== 桌面适配（规划书 §4.11 / 任务 D3，仅 H5 编译，不进小程序包） ==================== */
+@media (min-width: $bp-tablet) {
+  /* 宽屏下 scaleX 弧形头部失真，改为平底渐变条；顶部留白不再按手机状态栏计算（覆盖内联 padding-top） */
+  .header { padding-top: 28px !important; padding-bottom: 4px; }
+  .header-bg { top: 0; left: 0; width: 100%; height: 100%; transform: none; border-radius: 0; }
+  /* 渐变背景铺满全宽，头部内容与下方区块限宽 1200px 居中 */
+  .header-content { max-width: $content-max-page; margin: 0 auto; padding: 0 24px 28px; box-sizing: border-box; }
+  .section { width: 100%; max-width: $content-max-page; margin: 24px auto 0; padding: 0 24px; box-sizing: border-box; }
+  /* 100vh 未扣 topWindow 高度会使短内容页凭空多出约 60px 空滚动 */
+  .page-my { padding-bottom: 48px; min-height: calc(100vh - var(--window-top) - var(--top-window-height, 0px)); box-sizing: border-box; }
+}
+
+@media (min-width: $bp-desktop) {
+  /* ≥1200px：「服务」宫格与「其他」列表两列并排（1fr 侧边栏挤压出居中的 1200px 内容区） */
+  .page-my { display: grid; grid-template-columns: 1fr minmax(0, 600px) minmax(0, 600px) 1fr; align-content: start; }
+  .header { grid-column: 1 / -1; }
+  .section { width: auto; max-width: none; padding: 0; }
+  .section:nth-child(2) { grid-column: 2; margin: 24px 12px 0 24px; }
+  .section:nth-child(3) { grid-column: 3; margin: 24px 24px 0 12px; }
+  .menu-item { padding: 22px 0; }
+}
+/* #endif */
 </style>

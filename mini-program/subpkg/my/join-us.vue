@@ -33,7 +33,7 @@
         <view class="ic-row">
           <text class="ic-label">方向</text>
           <view class="dir-options">
-            <view v-for="d in directions" :key="d.key" class="dir-opt" :class="{ active: form.direction === d.key }" @click="form.direction = d.key">
+            <view v-for="d in directions" :key="d.key" class="dir-opt clickable" :class="{ active: form.direction === d.key }" @click="form.direction = d.key">
               {{ d.label }}
             </view>
           </view>
@@ -51,9 +51,9 @@
           <view class="attach-box">
             <view class="attach-item" v-for="(f, i) in form.attachments" :key="i">
               <text class="attach-name">附件{{ i + 1 }}</text>
-              <i class="ri-close-line" style="font-size:28rpx;color:#999;" @click="form.attachments.splice(i, 1)" />
+              <i class="ri-close-line clickable" style="font-size:28rpx;color:#999;" @click="form.attachments.splice(i, 1)" />
             </view>
-            <view class="attach-add" @click="addAttachment">
+            <view class="attach-add clickable" @click="addAttachment">
               <i class="ri-add-line" style="font-size:28rpx;color:#2979FF;" />
               <text>上传作品图（选填）</text>
             </view>
@@ -205,4 +205,25 @@ const submit = async () => {
 .submit-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; padding: 16rpx 28rpx; padding-bottom: calc(16rpx + env(safe-area-inset-bottom)); display: flex; box-shadow: 0 -4rpx 20rpx rgba(0,0,0,.06); }
 .sb-btn { flex: 1; height: 88rpx; line-height: 88rpx; background: linear-gradient(135deg, #2979FF, #1565C0); color: #fff; font-size: 32rpx; border-radius: 44rpx; border: none; font-weight: 600; padding: 0; text-align: center; }
 .sb-btn[disabled] { background: #ddd; color: #999; }
+
+/* #ifdef H5 */
+/* ==================== 桌面适配（规划书 §4.12 / 任务 D4，仅 H5 编译，不进小程序包） ==================== */
+/* 介绍卡、表单卡、申请状态卡统一居中 760px，底部提交条与表单同宽对齐 */
+.status-card { @include content-limit($content-max-form); }
+.intro-card { @include content-limit($content-max-form); }
+.info-card { @include content-limit($content-max-form); }
+.submit-bar { @include fixed-bar-limit($content-max-form); }
+
+@media (min-width: $bp-tablet) {
+  /* 100vh 未扣页头与 topWindow 高度会使短内容页凭空多出约 105px 空滚动 */
+  .page-join { min-height: calc(100vh - var(--window-top) - var(--top-window-height, 0px)); box-sizing: border-box; }
+  .status-card { margin-top: 24px; }
+  .intro-card { margin-top: 24px; }
+  .info-card { padding: 8px 24px; }
+  /* 桌面下给简介/作品说明更高的输入区，避免大屏上输入过矮 */
+  .ic-textarea { min-height: 120px; }
+  .submit-bar { border-radius: 12px 12px 0 0; padding: 12px 24px; }
+  .sb-btn { max-width: 320px; margin: 0 auto; }
+}
+/* #endif */
 </style>

@@ -75,7 +75,7 @@
     <!-- 底部操作栏 -->
     <view class="bottom-bar">
       <view class="bar-left">
-        <view class="bar-action" @click="goConsult">
+        <view class="bar-action clickable" @click="goConsult">
           <i class="ri-customer-service-2-line" style="font-size:40rpx;color:#666;" />
           <text class="bar-text">客服</text>
         </view>
@@ -189,4 +189,87 @@ const goConsult = () => uni.navigateTo({ url: '/subpkg/my/about' });
   color: #fff; font-size: 30rpx; border-radius: 42rpx; text-align: center;
   border: none; font-weight: 600; padding: 0;
 }
+
+/* #ifdef H5 */
+/* ==================== 桌面适配（B6，仅 H5 编译，不进小程序包） ==================== */
+
+/* 内容限宽 1200px 居中 */
+.page-detail {
+  @include content-limit($content-max-page);
+}
+
+/* 底部操作条宽屏限宽居中（≥768px 生效，与内容列同宽） */
+.bottom-bar {
+  @include fixed-bar-limit($content-max-page);
+}
+
+@include screen-tablet-up {
+  .page-detail {
+    padding-bottom: 100px;
+  }
+
+  /* 封面 750rpx 固定宽在桌面折算约 375px 偏小，改为跟随内容列 */
+  .cover-img {
+    width: 100%;
+    height: 300px;
+  }
+
+  .bottom-bar {
+    padding: 12px 24px;
+  }
+  /* 提交按钮不再全宽拉伸，右对齐定宽更符合桌面习惯 */
+  .btn-buy {
+    flex: 0 0 auto;
+    width: 320px;
+    margin-left: auto;
+  }
+}
+
+@include screen-desktop-up {
+  /* ≥1200px：封面（左 46%）与价格卡+流程卡（右 54%）双栏，说明与评价通栏；
+     grid-template-areas 只给现有卡片指定区域，不改 DOM 顺序 */
+  .page-detail {
+    display: grid;
+    grid-template-columns: minmax(0, 46fr) minmax(0, 54fr);
+    grid-template-areas:
+      "cover  price"
+      "cover  flow"
+      "desc   desc"
+      "review review";
+    gap: 20px 24px;
+    align-content: start;
+    padding: 20px 24px 110px;
+  }
+  .img-wrap {
+    grid-area: cover;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .cover-img {
+    height: 340px;
+  }
+  .price-card {
+    /* 双栏下取消 -24rpx 叠压封面的效果 */
+    grid-area: price;
+    margin: 0;
+  }
+  .flow-card {
+    grid-area: flow;
+    margin: 0;
+    align-self: start;
+  }
+  .desc-card {
+    grid-area: desc;
+    margin: 0;
+  }
+  .review-card {
+    grid-area: review;
+    margin: 0;
+  }
+
+  .bottom-bar {
+    border-radius: 12px 12px 0 0;
+  }
+}
+/* #endif */
 </style>

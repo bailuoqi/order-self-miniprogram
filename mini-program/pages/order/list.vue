@@ -2,14 +2,14 @@
   <view class="page-order-list">
     <!-- 状态Tab -->
     <scroll-view scroll-x class="tabs" :show-scrollbar="false">
-      <view v-for="tab in tabs" :key="tab.key" class="tab-item" :class="{ active: activeTab === tab.key }" @click="switchTab(tab.key)">
+      <view v-for="tab in tabs" :key="tab.key" class="tab-item clickable" :class="{ active: activeTab === tab.key }" @click="switchTab(tab.key)">
         <text>{{ tab.label }}</text>
       </view>
     </scroll-view>
 
     <!-- 订单列表 -->
     <scroll-view scroll-y class="order-list" @scrolltolower="loadMore">
-      <view class="order-card" v-for="order in orders" :key="order.id" @click="goDetail(order)">
+      <view class="order-card hover-lift" v-for="order in orders" :key="order.id" @click="goDetail(order)">
         <!-- 订单头 -->
         <view class="order-header">
           <text class="order-no">{{ order.source === 'custom' ? '自定义需求' : '标准服务' }} · {{ order.order_no }}</text>
@@ -128,4 +128,30 @@ const statusColor = (s) => ORDER_STATUS_COLOR[s] || '#999';
 .btn-action.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
 
 .loading, .empty { text-align: center; padding: 40rpx; color: var(--text-light); }
+
+/* #ifdef H5 */
+/* ==================== 桌面适配（任务 C3，仅 H5 编译，不进小程序包） ==================== */
+
+/* H5 全宽度：100vh 未扣固定页头（窄屏 44px）、底部 tabBar（--window-bottom，宽屏为 0）
+   与宽屏 topWindow 高度，页面会超高、列表在 scroll-view 外整页滚动，
+   scrolltolower 永不触发（加载更多失效，验收流程 5）。统一扣除三者。 */
+.page-order-list { height: calc(100vh - var(--window-top) - var(--window-bottom, 0px) - var(--top-window-height, 0px)); }
+
+/* 放开 flex 子项 min-height:auto 的内容撑高，让列表滚动发生在 scroll-view 内部，
+   触底才能触发 scrolltolower 加载更多（任务 C3 验证项，窄屏同样需要） */
+.order-list { min-height: 0; }
+
+/* ≥768px：订单列表（含卡片）限宽 1200px 居中；tabs 白条铺满全宽、项目居中（规划书 §4.6） */
+.order-list {
+  @include content-limit($content-max-page);
+}
+
+@include screen-tablet-up {
+  .tabs { text-align: center; }
+  .tab-item { padding: 28rpx 36rpx; }
+
+  .order-card { padding: 32rpx; }
+  .btn-action { padding: 14rpx 32rpx; }
+}
+/* #endif */
 </style>

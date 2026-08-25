@@ -31,5 +31,10 @@
   "uniStatistics": {
     "enable": false
   },
+  "h5": {
+    "title": "定制接单",
+    "rpxCalcMaxDeviceWidth": 767,
+    "rpxCalcBaseDeviceWidth": 375
+  },
   "vueVersion": "3"
 }
