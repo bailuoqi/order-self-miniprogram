@@ -52,19 +52,40 @@ const tryAutoLogin = async () => {
 // 同步 uni 内部状态（--window-bottom 等），窗口动态拖拽变宽变窄时双保险。
 const setupDesktopTabBar = () => {
   const mediaQuery = window.matchMedia("(min-width: 768px)");
+  // onLaunch 早于 Tab 页挂载、switchTab 的 complete 也早于目标页就绪，
+  // 此时 hideTabBar 会以 fail 返回（not TabBar page），故失败后限次重试；
+  // 非 Tab 页上恒失败，重试耗尽即停，由 App.vue 样式端的
+  // --window-bottom / --tab-bar-height 归零规则最终兜底。
+  let hideRetry = 0;
   const applyTabBarVisible = () => {
     if (mediaQuery.matches) {
-      uni.hideTabBar({ animation: false, fail: () => {} });
+      uni.hideTabBar({
+        animation: false,
+        success: () => { hideRetry = 0; },
+        fail: () => {
+          if (hideRetry < 5) {
+            hideRetry += 1;
+            setTimeout(applyTabBarVisible, 200);
+          }
+        },
+      });
     } else {
       uni.showTabBar({ animation: false, fail: () => {} });
     }
   };
-  applyTabBarVisible();
+  const triggerApply = () => {
+    hideRetry = 0;
+    applyTabBarVisible();
+  };
+  triggerApply();
+  uni.addInterceptor("switchTab", {
+    complete: () => setTimeout(triggerApply, 50),
+  });
   if (typeof mediaQuery.addEventListener === "function") {
-    mediaQuery.addEventListener("change", applyTabBarVisible);
+    mediaQuery.addEventListener("change", triggerApply);
   } else if (typeof mediaQuery.addListener === "function") {
     // 兼容不支持 addEventListener 的旧浏览器
-    mediaQuery.addListener(applyTabBarVisible);
+    mediaQuery.addListener(triggerApply);
   }
 };
 // #endif
@@ -135,6 +156,18 @@ page {
 @media (min-width: $bp-tablet) {
   uni-tabbar.uni-tabbar-bottom {
     display: none !important;
+  }
+
+  /* uni.hideTabBar 在 onLaunch/直达子包页时可能未生效，Tab 页会残留 50px 底部占位：
+     uni-page 的 --window-bottom 与 uni-page-wrapper 的 --tab-bar-height（wrapper 高度
+     按其扣减、::after 以其垫底，页面凭空高 50px 出现空滚动）。宽屏下无底部 tabBar，
+     两个变量一并强制归零，与上面的 tabBar 隐藏同为双保险 */
+  uni-page {
+    --window-bottom: 0px !important;
+  }
+
+  uni-page-wrapper {
+    --tab-bar-height: 0px !important;
   }
 }
 

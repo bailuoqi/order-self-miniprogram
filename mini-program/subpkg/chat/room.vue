@@ -131,8 +131,9 @@ const goOrder = () => {
 .input-bar { @include content-limit($content-max-chat); }
 
 @media (min-width: $bp-tablet) {
-  /* 宽屏下 topWindow 顶栏 + 页头占据 --window-top，用剩余视口高度，避免输入条被顶出屏外 */
-  .page-chat-room { height: calc(100vh - var(--window-top)); }
+  /* 宽屏下 --window-top 只含页头 44px，topWindow 高度要用 --top-window-height 另行扣除，
+     否则整页高出 61px、输入条被顶出视口（与 pages/order/list.vue 同一处理） */
+  .page-chat-room { height: calc(100vh - var(--window-top) - var(--top-window-height, 0px)); }
   .order-bar { border-radius: 0 0 12px 12px; }
   .msg-list { padding: 24px; }
   /* 气泡最大宽度由固定 480rpx 放宽到列宽百分比（约 60%） */

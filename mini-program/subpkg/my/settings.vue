@@ -83,7 +83,8 @@ const goPage = (url) => uni.navigateTo({ url });
 .logout-area { @include content-limit($content-max-form); }
 
 @media (min-width: $bp-tablet) {
-  .page-settings { padding: 24px 20px; }
+  /* 100vh 未扣页头与 topWindow 高度会使短内容页凭空多出约 105px 空滚动 */
+  .page-settings { padding: 24px 20px; min-height: calc(100vh - var(--window-top) - var(--top-window-height, 0px)); box-sizing: border-box; }
   .btn-logout { max-width: 320px; margin: 0 auto; }
 }
 /* #endif */

@@ -215,6 +215,8 @@ const submit = async () => {
 .submit-bar { @include fixed-bar-limit($content-max-form); }
 
 @media (min-width: $bp-tablet) {
+  /* 100vh 未扣页头与 topWindow 高度会使短内容页凭空多出约 105px 空滚动 */
+  .page-join { min-height: calc(100vh - var(--window-top) - var(--top-window-height, 0px)); box-sizing: border-box; }
   .status-card { margin-top: 24px; }
   .intro-card { margin-top: 24px; }
   .info-card { padding: 8px 24px; }

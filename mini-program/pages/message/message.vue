@@ -64,7 +64,8 @@ const goRoom = (s) => {
 .page-message { @include content-limit($content-max-chat); }
 
 @media (min-width: $bp-tablet) {
-  .page-message { min-height: calc(100vh - var(--window-top)); }
+  /* --window-top 只含页头 44px，topWindow 高度用 --top-window-height 另行扣除，避免整页超高 61px */
+  .page-message { min-height: calc(100vh - var(--window-top) - var(--top-window-height, 0px)); }
   /* 行内间距与头像微调 */
   .msg-item { padding: 20px 24px; gap: 14px; }
   .msg-ri-wrap { width: 48px; height: 48px; }

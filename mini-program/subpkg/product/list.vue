@@ -117,16 +117,16 @@ const goDetail = (p) => uni.navigateTo({ url: '/subpkg/product/detail?id=' + p.i
 /* 筛选栏与列表限宽 1200px 居中 */
 .filter-bar {
   @include content-limit($content-max-page);
+  /* H5 页头是固定定位、宽屏下还有 topWindow 顶栏，吸顶位置需让开两者
+     （--window-top 只含页头 44px；--top-window-height 窄屏为 0px），
+     否则滚动后筛选栏被页头/顶栏盖住不可见 */
+  top: calc(var(--window-top) + var(--top-window-height, 0px));
 }
 .product-list {
   @include content-limit($content-max-page);
 }
 
 @include screen-tablet-up {
-  /* 吸顶位置跟随 H5 页头/顶栏高度（--window-top 由框架维护），避免吸顶后被固定页头遮挡 */
-  .filter-bar {
-    top: var(--window-top);
-  }
   .filter-item {
     padding: 14px 0;
     font-size: 14px;

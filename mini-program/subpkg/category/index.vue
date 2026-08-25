@@ -112,13 +112,19 @@ const goCustom = () => uni.navigateTo({ url: '/subpkg/order/create-custom' });
 /* #ifdef H5 */
 /* ==================== 桌面适配（B4，仅 H5 编译，不进小程序包） ==================== */
 
-/* 整体限宽 1200px 居中；高度仍由 calc(100vh - var(--window-top)) 计算，
-   topWindow 出现后 --window-top 由框架自动更新，天然兼容 */
+/* 整体限宽 1200px 居中 */
 .page-category {
   @include content-limit($content-max-page);
 }
 
 @include screen-tablet-up {
+  /* 宽屏下页面被框架放进已扣除 topWindow 高度的 uni-content 容器，而 --window-top 只含
+     页头 44px，需同时扣掉 --top-window-height（uni-h5 注入在 :root），否则整页高出 61px、
+     出现外层滚动条（与 pages/order/list.vue 同一处理） */
+  .page-category {
+    height: calc(100vh - var(--window-top) - var(--top-window-height, 0px));
+  }
+
   /* 左侧分类栏加宽至 220px，字号随桌面可读性微调 */
   .sidebar {
     width: 220px;

@@ -218,7 +218,8 @@ const goEditProfile = () => uni.navigateTo({ url: '/subpkg/my/settings' });
   /* 渐变背景铺满全宽，头部内容与下方区块限宽 1200px 居中 */
   .header-content { max-width: $content-max-page; margin: 0 auto; padding: 0 24px 28px; box-sizing: border-box; }
   .section { width: 100%; max-width: $content-max-page; margin: 24px auto 0; padding: 0 24px; box-sizing: border-box; }
-  .page-my { padding-bottom: 48px; }
+  /* 100vh 未扣 topWindow 高度会使短内容页凭空多出约 60px 空滚动 */
+  .page-my { padding-bottom: 48px; min-height: calc(100vh - var(--window-top) - var(--top-window-height, 0px)); box-sizing: border-box; }
 }
 
 @media (min-width: $bp-desktop) {
