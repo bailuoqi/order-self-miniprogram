@@ -20,6 +20,7 @@
 .ri-attachment-2:before { content: "\ea84"; }
 .ri-award-line:before { content: "\ea8a"; }
 .ri-bank-line:before { content: "\ea94"; }
+.ri-box-3-line:before { content: "\f2f5"; }
 .ri-briefcase-4-fill:before { content: "\eaf0"; }
 .ri-briefcase-4-line:before { content: "\eaf1"; }
 .ri-calendar-2-line:before { content: "\eb21"; }
@@ -37,10 +38,13 @@
 .ri-edit-box-line:before { content: "\ec82"; }
 .ri-edit-line:before { content: "\ec86"; }
 .ri-eye-2-line:before { content: "\ecb1"; }
+.ri-file-code-line:before { content: "\ecd1"; }
 .ri-file-list-2-line:before { content: "\eced"; }
 .ri-file-list-3-line:before { content: "\ecef"; }
 .ri-fire-line:before { content: "\ed33"; }
+.ri-flashlight-line:before { content: "\ed3d"; }
 .ri-funds-line:before { content: "\eda3"; }
+.ri-global-line:before { content: "\edcf"; }
 .ri-heart-3-fill:before { content: "\ee0a"; }
 .ri-heart-3-line:before { content: "\ee0b"; }
 .ri-id-card-line:before { content: "\f4e8"; }
@@ -53,19 +57,26 @@
 .ri-money-cny-circle-line:before { content: "\ef61"; }
 .ri-notification-3-line:before { content: "\ef94"; }
 .ri-pencil-line:before { content: "\efe0"; }
+.ri-plug-line:before { content: "\f019"; }
+.ri-question-answer-line:before { content: "\f043"; }
 .ri-refresh-line:before { content: "\f064"; }
 .ri-rocket-line:before { content: "\f096"; }
 .ri-route-line:before { content: "\f09b"; }
 .ri-search-2-line:before { content: "\f0cd"; }
 .ri-secure-payment-line:before { content: "\f0d3"; }
 .ri-send-plane-line:before { content: "\f0da"; }
+.ri-settings-3-line:before { content: "\f0e6"; }
 .ri-shield-check-line:before { content: "\f100"; }
+.ri-smartphone-line:before { content: "\f15a"; }
+.ri-stack-line:before { content: "\f181"; }
 .ri-star-fill:before { content: "\f186"; }
 .ri-star-smile-line:before { content: "\f18f"; }
 .ri-task-line:before { content: "\f1e8"; }
 .ri-team-line:before { content: "\f1ee"; }
+.ri-terminal-box-line:before { content: "\f1f6"; }
 .ri-thumb-up-line:before { content: "\f207"; }
 .ri-time-line:before { content: "\f20f"; }
+.ri-tools-line:before { content: "\f21b"; }
 .ri-upload-2-line:before { content: "\f24a"; }
 .ri-user-3-fill:before { content: "\f255"; }
 .ri-user-3-line:before { content: "\f256"; }
@@ -73,4 +84,3 @@
 .ri-wallet-3-line:before { content: "\f2ac"; }
 .ri-wechat-2-line:before { content: "\f2b4"; }
 .ri-wechat-pay-line:before { content: "\f2b8"; }
-

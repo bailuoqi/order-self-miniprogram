@@ -51,6 +51,19 @@
       </view>
     </view>
 
+    <!-- 服务保障 -->
+    <view class="guarantee-bar">
+      <view class="g-item" v-for="g in guarantees" :key="g.title">
+        <view class="g-icon-box">
+          <i :class="'ri-' + g.icon" style="font-size:40rpx;color:#2979FF;" />
+        </view>
+        <view class="g-texts">
+          <text class="g-title">{{ g.title }}</text>
+          <text class="g-desc">{{ g.desc }}</text>
+        </view>
+      </view>
+    </view>
+
     <!-- 服务分类（软件定制 / 电子代做） -->
     <view class="section" v-for="group in categoryGroups" :key="group.key">
       <view class="section-header">
@@ -63,9 +76,27 @@
       <view class="category-grid">
         <view class="category-item clickable" v-for="cat in group.items" :key="cat.id" @click="goProductList(cat)">
           <view class="cat-icon-box">
-            <i :class="'ri-' + (group.key === 'software' ? 'code-s-slash-line' : 'cpu-line')" style="font-size:44rpx;color:#2979FF;" />
+            <i :class="'ri-' + categoryIconName(cat)" style="font-size:44rpx;color:#2979FF;" />
           </view>
           <text class="cat-name">{{ cat.name }}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 分类为空的兜底：目录尚未配置也不留白 -->
+    <view class="section" v-if="loaded && !categoryGroups.length">
+      <view class="section-header">
+        <text class="section-title">服务分类</text>
+      </view>
+      <view class="empty-card">
+        <view class="empty-icon-box">
+          <i class="ri-apps-2-line" style="font-size:56rpx;color:#2979FF;" />
+        </view>
+        <text class="empty-title">服务目录整理中</text>
+        <text class="empty-desc">软件定制与电子代做均可接单，直接描述你的需求，团队评估后报价</text>
+        <view class="empty-btn clickable" @click="goCustom">
+          <i class="ri-edit-box-line" style="font-size:28rpx;" />
+          <text>发布自定义需求</text>
         </view>
       </view>
     </view>
@@ -81,11 +112,15 @@
           <i class="ri-arrow-right-s-line" style="font-size:28rpx;" />
         </view>
       </view>
-      <scroll-view scroll-x class="product-scroll" :show-scrollbar="false" enhanced>
+      <!-- v-show 而非 v-if：H5 桌面滚轮补丁在 onMounted 查询该节点，需常驻 DOM -->
+      <scroll-view v-show="hotProducts.length" scroll-x class="product-scroll" :show-scrollbar="false" enhanced>
         <view class="product-scroll-inner">
           <view class="product-card hover-lift" v-for="product in hotProducts" :key="product.id" @click="goProductDetail(product)">
             <view class="product-img-wrap">
-              <image class="product-img" :src="product.cover || '/static/images/cover-default.png'" mode="aspectFill" />
+              <image v-if="product.cover" class="product-img" :src="product.cover" mode="aspectFill" />
+              <view v-else class="product-img product-img--holder">
+                <i :class="'ri-' + productIconName(product)" />
+              </view>
               <view class="product-badge" v-if="product.tags && product.tags[0]">{{ product.tags[0] }}</view>
             </view>
             <view class="product-info">
@@ -102,6 +137,17 @@
           </view>
         </view>
       </scroll-view>
+      <view class="empty-card" v-if="loaded && !hotProducts.length">
+        <view class="empty-icon-box">
+          <i class="ri-inbox-line" style="font-size:56rpx;color:#2979FF;" />
+        </view>
+        <text class="empty-title">标准服务上架中</text>
+        <text class="empty-desc">没有现成的服务也没关系，把需求告诉团队，先评估再报价，确认后才开工</text>
+        <view class="empty-btn clickable" @click="goCustom">
+          <i class="ri-edit-box-line" style="font-size:28rpx;" />
+          <text>发布自定义需求</text>
+        </view>
+      </view>
     </view>
 
     <!-- 客户评价精选 -->
@@ -125,6 +171,28 @@
       </view>
     </view>
 
+    <!-- 常见问题 -->
+    <view class="section">
+      <view class="section-header">
+        <text class="section-title">常见问题</text>
+      </view>
+      <view class="faq-list">
+        <view class="faq-card" v-for="f in faqs" :key="f.q">
+          <view class="faq-q">
+            <i class="ri-question-answer-line" style="font-size:30rpx;color:#2979FF;" />
+            <text>{{ f.q }}</text>
+          </view>
+          <text class="faq-a">{{ f.a }}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部品牌收尾 -->
+    <view class="page-foot">
+      <text class="page-foot-brand">{{ brandName }} · 软件定制 / 电子代做</text>
+      <text class="page-foot-slogan">需求评估免费，报价确认后才开工</text>
+    </view>
+
     <!-- 底部安全区 -->
     <view class="safe-bottom" />
   </view>
@@ -137,6 +205,7 @@ import { useCategoryStore } from '@/store/category.js';
 import { useProductStore } from '@/store/product.js';
 import { useAuthStore } from '@/store/auth.js';
 import { api } from '@/api/request.js';
+import { categoryIconName, productIconName, GUARANTEES, FAQS, DEFAULT_NOTICE } from '@/common/browse.js';
 
 const authStore = useAuthStore();
 const categoryStore = useCategoryStore();
@@ -149,7 +218,13 @@ const userAvatar = ref('');
 const categoryGroups = ref([]);
 const hotProducts = ref([]);
 const reviews = ref([]);
-const notice = ref({ text: '' });
+// 公告接口无数据时用流程说明兜底，避免公告条整块消失
+const notice = ref({ text: DEFAULT_NOTICE });
+// 首次数据返回前不渲染空态，避免加载闪烁
+const loaded = ref(false);
+
+const guarantees = GUARANTEES;
+const faqs = FAQS;
 
 const quickEntries = ref([
   { key: 'custom', icon: 'edit-box-line', label: '发布需求', bgColor: 'linear-gradient(135deg,#E3F2FD,#BBDEFB)', iconColor: '#1565C0' },
@@ -160,11 +235,12 @@ const quickEntries = ref([
 
 const fetchData = async () => {
   try {
+    // 热门取 8 个：桌面 4 列栅格正好 2 行；评价取 6 条：桌面 3 列 2 行
     const [cats, hots, notices, revs] = await Promise.all([
       categoryStore.fetchAll().then(() => categoryStore.list),
-      productStore.fetchHot().then(() => productStore.hotList),
+      productStore.fetchHot(8).then(() => productStore.hotList),
       api.get('/cms/articles', { type: 'notice' }),
-      api.get('/orders/reviews', { limit: 3 }).catch(() => []),
+      api.get('/orders/reviews', { limit: 6 }).catch(() => []),
     ]);
     const list = cats || [];
     categoryGroups.value = [
@@ -178,6 +254,8 @@ const fetchData = async () => {
     }
   } catch (e) {
     console.log('首页数据加载失败:', e);
+  } finally {
+    loaded.value = true;
   }
 };
 
@@ -224,6 +302,7 @@ const onEntry = (item) => {
   else uni.navigateTo({ url: '/subpkg/my/about' });
 };
 const goCategory = () => uni.navigateTo({ url: '/subpkg/category/index' });
+const goCustom = () => uni.navigateTo({ url: '/subpkg/order/create-custom' });
 const goProductList = (cat) => {
   const query = cat ? '?categoryId=' + cat.id + '&categoryName=' + cat.name : '';
   uni.navigateTo({ url: '/subpkg/product/list' + query });
@@ -401,6 +480,97 @@ const goProductDetail = (product) => uni.navigateTo({ url: '/subpkg/product/deta
   text-overflow: ellipsis;
 }
 
+/* 服务保障 */
+.guarantee-bar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16rpx;
+  margin: 24rpx 24rpx 0;
+}
+.g-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 22rpx 20rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.04);
+}
+.g-icon-box {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 16rpx;
+  background: #E3F2FD;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.g-texts {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+.g-title {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #1A1A2E;
+}
+.g-desc {
+  font-size: 22rpx;
+  color: #999;
+  line-height: 1.5;
+}
+
+/* 空态卡片（分类/热门服务无数据时） */
+.empty-card {
+  margin: 0 24rpx;
+  padding: 48rpx 32rpx;
+  background: #fff;
+  border-radius: 20rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.06);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.empty-icon-box {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #E3F2FD, #BBDEFB);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.empty-title {
+  margin-top: 20rpx;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #1A1A2E;
+}
+.empty-desc {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: #999;
+  line-height: 1.6;
+  max-width: 560rpx;
+}
+.empty-btn {
+  margin-top: 28rpx;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  background: linear-gradient(135deg, #2979FF, #1565C0);
+  color: #fff;
+  font-size: 26rpx;
+  font-weight: 600;
+  padding: 16rpx 40rpx;
+  border-radius: 40rpx;
+}
+
 /* 通用区块 */
 .section {
   margin: 36rpx 0 0;
@@ -501,6 +671,14 @@ const goProductDetail = (product) => uni.navigateTo({ url: '/subpkg/product/deta
   display: block;
   background: linear-gradient(135deg, #E3F2FD, #BBDEFB);
 }
+/* 无封面时用分类图标占位，避免整块空白 */
+.product-img--holder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 72rpx;
+  color: rgba(41, 121, 255, 0.45);
+}
 .product-badge {
   position: absolute;
   top: 16rpx;
@@ -591,6 +769,53 @@ const goProductDetail = (product) => uni.navigateTo({ url: '/subpkg/product/deta
   color: #999;
 }
 
+/* 常见问题 */
+.faq-list {
+  padding: 0 24rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+.faq-card {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 26rpx 28rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.06);
+}
+.faq-q {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #1A1A2E;
+}
+.faq-a {
+  display: block;
+  margin-top: 14rpx;
+  font-size: 24rpx;
+  color: #666;
+  line-height: 1.7;
+}
+
+/* 底部品牌收尾 */
+.page-foot {
+  margin-top: 44rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+}
+.page-foot-brand {
+  font-size: 24rpx;
+  color: #999;
+  font-weight: 600;
+}
+.page-foot-slogan {
+  font-size: 22rpx;
+  color: #bbb;
+}
+
 .safe-bottom {
   height: calc(120rpx + env(safe-area-inset-bottom));
 }
@@ -643,6 +868,16 @@ const goProductDetail = (product) => uni.navigateTo({ url: '/subpkg/product/deta
     margin: 16px 0 0;
   }
 
+  /* 服务保障：宽屏一行四项成信任条 */
+  .guarantee-bar {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin: 16px 0 0;
+  }
+  .g-item {
+    padding: 14px 16px;
+  }
+
   /* 页面已有 24px 侧边距，区块内部左右留白归零对齐 */
   .section-header {
     padding: 0;
@@ -652,6 +887,22 @@ const goProductDetail = (product) => uni.navigateTo({ url: '/subpkg/product/deta
   }
   .review-list {
     padding: 0;
+  }
+  .faq-list {
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .faq-card {
+    margin: 0;
+  }
+  .empty-card {
+    margin: 0;
+    padding: 40px 24px;
+  }
+  .page-foot {
+    margin-top: 32px;
   }
 
   /* B3：分类宫格宽屏改列数（8 列），避免图标间距过大（改列数不改结构） */
