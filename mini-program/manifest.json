@@ -33,7 +33,7 @@
   },
   "h5": {
     "title": "定制接单",
-    "rpxCalcMaxDeviceWidth": 960,
+    "rpxCalcMaxDeviceWidth": 767,
     "rpxCalcBaseDeviceWidth": 375
   },
   "vueVersion": "3"

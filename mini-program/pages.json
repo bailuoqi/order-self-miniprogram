@@ -158,9 +158,11 @@
     "navigationBarBackgroundColor": "#2979FF",
     "backgroundColor": "#F5F6FA",
     // #ifdef H5
-    // 锁定桌面上 rpx 按 375 基准换算（当前框架默认值，显式声明防升级漂移，规划书 §3）
+    // 锁定桌面上 rpx 按 375 基准换算（规划书 §3）。上限取 767：与 768px 桌面断点对齐，
+    // 视口 ≥768（顶栏出现、卡片栅格化）时 rpx 一律按 375 基准，避免 768–960 档
+    // 桌面多列布局叠加 rpx 放大（约 2 倍）导致卡片溢出、横向滚动条
     // 注：本版本 uni-app（vue3）H5 运行时从 globalStyle 读取这两个键，manifest.json 的 h5 节点同步声明
-    "rpxCalcMaxDeviceWidth": 960,
+    "rpxCalcMaxDeviceWidth": 767,
     "rpxCalcBaseDeviceWidth": 375
     // #endif
   },
