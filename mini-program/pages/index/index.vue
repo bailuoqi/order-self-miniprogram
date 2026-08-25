@@ -32,7 +32,7 @@
 
     <!-- 快捷入口 -->
     <view class="quick-entries">
-      <view class="qe-card" v-for="item in quickEntries" :key="item.key" @click="onEntry(item)">
+      <view class="qe-card clickable" v-for="item in quickEntries" :key="item.key" @click="onEntry(item)">
         <view class="qe-icon-box" :style="{ background: item.bgColor }">
           <i :class="'ri-' + item.icon" :style="{ color: item.iconColor, fontSize: '48rpx' }" />
         </view>
@@ -55,13 +55,13 @@
     <view class="section" v-for="group in categoryGroups" :key="group.key">
       <view class="section-header">
         <text class="section-title">{{ group.title }}</text>
-        <view class="section-more" @click="goCategory">
+        <view class="section-more clickable" @click="goCategory">
           <text>全部</text>
           <i class="ri-arrow-right-s-line" style="font-size:28rpx;" />
         </view>
       </view>
       <view class="category-grid">
-        <view class="category-item" v-for="cat in group.items" :key="cat.id" @click="goProductList(cat)">
+        <view class="category-item clickable" v-for="cat in group.items" :key="cat.id" @click="goProductList(cat)">
           <view class="cat-icon-box">
             <i :class="'ri-' + (group.key === 'software' ? 'code-s-slash-line' : 'cpu-line')" style="font-size:44rpx;color:#2979FF;" />
           </view>
@@ -76,14 +76,14 @@
         <text class="section-title">
           <text class="section-emoji">🔥</text>热门标准服务
         </text>
-        <view class="section-more" @click="goProductList()">
+        <view class="section-more clickable" @click="goProductList()">
           <text>更多</text>
           <i class="ri-arrow-right-s-line" style="font-size:28rpx;" />
         </view>
       </view>
       <scroll-view scroll-x class="product-scroll" :show-scrollbar="false" enhanced>
         <view class="product-scroll-inner">
-          <view class="product-card" v-for="product in hotProducts" :key="product.id" @click="goProductDetail(product)">
+          <view class="product-card hover-lift" v-for="product in hotProducts" :key="product.id" @click="goProductDetail(product)">
             <view class="product-img-wrap">
               <image class="product-img" :src="product.cover" mode="aspectFill" />
               <view class="product-badge" v-if="product.tags && product.tags[0]">{{ product.tags[0] }}</view>
@@ -592,4 +592,109 @@ const goProductDetail = (product) => uni.navigateTo({ url: '/subpkg/product/deta
 .safe-bottom {
   height: calc(120rpx + env(safe-area-inset-bottom));
 }
+
+/* #ifdef H5 */
+/* ==================== 桌面适配（B1–B3，仅 H5 编译，不进小程序包） ==================== */
+
+/* B1：内容限宽 1200px 居中（页面背景与 page 同色，视觉上铺满全宽） */
+.page-index {
+  @include content-limit($content-max-page);
+}
+
+@include screen-tablet-up {
+  /* B1：宽屏下导航职责移交 topWindow 顶栏，整体隐藏页内自定义导航栏
+     （display:none 连同 sticky 占位与 statusBarHeight 内联留白一并消除） */
+  .nav-bar {
+    display: none;
+  }
+
+  /* B1：hero 横幅与快捷入口同一行（约 60% / 40%），其余区块通栏 */
+  .page-index {
+    display: grid;
+    grid-template-columns: minmax(0, 6fr) minmax(0, 4fr);
+    column-gap: 24px;
+    align-content: start;
+    padding: 0 24px;
+  }
+  .page-index > * {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+  .hero-card {
+    grid-column: 1;
+    margin: 20px 0 0;
+  }
+  .quick-entries {
+    grid-column: 2;
+    margin: 20px 0 0;
+    padding: 16px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    align-items: center;
+  }
+  .notice-bar {
+    margin: 16px 0 0;
+  }
+
+  /* 页面已有 24px 侧边距，区块内部左右留白归零对齐 */
+  .section-header {
+    padding: 0;
+  }
+  .category-grid {
+    padding: 0;
+  }
+  .review-list {
+    padding: 0;
+  }
+
+  /* B3：分类宫格宽屏改列数（8 列），避免图标间距过大（改列数不改结构） */
+  .category-item {
+    width: 12.5%;
+  }
+
+  /* B2：768–1199px 热门区保持横向滚动，仅左右边距与区块对齐 */
+  .product-scroll-inner {
+    padding: 4px 0 12px;
+  }
+
+  /* B3：客户评价宽屏卡片栅格（平板 2 列） */
+  .review-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  /* 宽屏无底部 tabBar，压缩底部占位 */
+  .safe-bottom {
+    height: 32px;
+  }
+}
+
+@include screen-desktop-up {
+  /* B2：≥1200px 热门标准服务由横滚改为 4 列栅格（仅 CSS，不改数据逻辑；
+     无横向溢出时页内滚轮补丁自动失效，滚轮恢复纵向滚动页面） */
+  .product-scroll-inner {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    width: auto;
+  }
+  .product-card {
+    width: auto;
+    margin-right: 0;
+  }
+  .product-img {
+    height: 150px;
+  }
+
+  /* B3：客户评价 3 列、分类宫格 10 列 */
+  .review-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .category-item {
+    width: 10%;
+  }
+}
+/* #endif */
 </style>
