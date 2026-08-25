@@ -132,20 +132,21 @@ const statusColor = (s) => ORDER_STATUS_COLOR[s] || '#999';
 /* #ifdef H5 */
 /* ==================== 桌面适配（任务 C3，仅 H5 编译，不进小程序包） ==================== */
 
+/* H5 全宽度：100vh 未扣固定页头（窄屏 44px）、底部 tabBar（--window-bottom，宽屏为 0）
+   与宽屏 topWindow 高度，页面会超高、列表在 scroll-view 外整页滚动，
+   scrolltolower 永不触发（加载更多失效，验收流程 5）。统一扣除三者。 */
+.page-order-list { height: calc(100vh - var(--window-top) - var(--window-bottom, 0px) - var(--top-window-height, 0px)); }
+
+/* 放开 flex 子项 min-height:auto 的内容撑高，让列表滚动发生在 scroll-view 内部，
+   触底才能触发 scrolltolower 加载更多（任务 C3 验证项，窄屏同样需要） */
+.order-list { min-height: 0; }
+
 /* ≥768px：订单列表（含卡片）限宽 1200px 居中；tabs 白条铺满全宽、项目居中（规划书 §4.6） */
 .order-list {
   @include content-limit($content-max-page);
 }
 
 @include screen-tablet-up {
-  /* 宽屏下页面被框架放进扣除 topWindow 的 uni-content 容器里，而 --window-top 只含页头高度，
-     需同时扣掉 --top-window-height（uni-h5 注入在 :root），否则页面超高出现外层滚动条 */
-  .page-order-list { height: calc(100vh - var(--window-top) - var(--top-window-height, 0px)); }
-
-  /* 放开 flex 子项 min-height:auto 的内容撑高，让列表滚动发生在 scroll-view 内部，
-     桌面滚轮才能触底触发 scrolltolower 加载更多（任务 C3 验证项） */
-  .order-list { min-height: 0; }
-
   .tabs { text-align: center; }
   .tab-item { padding: 28rpx 36rpx; }
 

@@ -76,6 +76,11 @@ const loadMessages = async () => {
   try {
     await chatStore.fetchMessages(sessionId.value);
     messages.value = chatStore.messages || [];
+    // #ifdef H5
+    // 等消息节点渲染完成再设置 scrollTop，否则滚底估算在可滚动高度为 0 时被浏览器
+    // 钳到 0，且后续轮询设同值不触发更新，列表永远停在顶部（验收流程 6）
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    // #endif
     scrollTop.value = messages.value.length * 200;
   } catch (e) { console.log(e); }
 };
@@ -125,15 +130,18 @@ const goOrder = () => {
 
 /* #ifdef H5 */
 /* ==================== 桌面适配（规划书 §4.8 / 任务 D1，仅 H5 编译，不进小程序包） ==================== */
+/* H5 全宽度：100vh 未扣固定页头（窄屏 44px）与宽屏 topWindow 高度，长消息列表会把
+   输入条顶出视口、消息滚动发生在整页而非 scroll-view 内（验收流程 6）。
+   统一扣除，并放开 msg-list 的 flex min-height:auto 撑高，让列表内部滚动。 */
+.page-chat-room { height: calc(100vh - var(--window-top) - var(--top-window-height, 0px)); }
+.msg-list { min-height: 0; }
+
 /* 顶部订单条、消息列表、输入条同宽：整列限宽 960px 居中 */
 .order-bar { @include content-limit($content-max-chat); }
 .msg-list { @include content-limit($content-max-chat); }
 .input-bar { @include content-limit($content-max-chat); }
 
 @media (min-width: $bp-tablet) {
-  /* 宽屏下 --window-top 只含页头 44px，topWindow 高度要用 --top-window-height 另行扣除，
-     否则整页高出 61px、输入条被顶出视口（与 pages/order/list.vue 同一处理） */
-  .page-chat-room { height: calc(100vh - var(--window-top) - var(--top-window-height, 0px)); }
   .order-bar { border-radius: 0 0 12px 12px; }
   .msg-list { padding: 24px; }
   /* 气泡最大宽度由固定 480rpx 放宽到列宽百分比（约 60%） */
