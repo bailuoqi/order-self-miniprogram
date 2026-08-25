@@ -97,6 +97,10 @@ onReachBottom(() => {
   }
 });
 
+// 单页 30 条：桌面 3 列栅格首屏铺满且演示目录（24 项）一页取尽；
+// 触底翻页兜底更大目录（首屏内容不足一屏时桌面无法触发触底）
+const PAGE_SIZE = 30;
+
 const setSort = (type) => {
   if (type === 'price') {
     priceOrder.value = sortType.value === 'price' ? !priceOrder.value : false;
@@ -110,7 +114,7 @@ const setSort = (type) => {
 const loadProducts = async () => {
   loading.value = true;
   try {
-    const params = { page, pageSize: 10 };
+    const params = { page, pageSize: PAGE_SIZE };
     if (categoryId) params.category_id = categoryId;
     const res = await productStore.fetchList(params);
     if (page === 1) {
@@ -119,7 +123,7 @@ const loadProducts = async () => {
       products.value = [...products.value, ...(productStore.list || [])];
     }
     total.value = productStore.total || products.value.length;
-    finished.value = productStore.list.length < 10;
+    finished.value = productStore.list.length < PAGE_SIZE;
   } catch (e) {
     console.log('加载失败:', e);
     finished.value = true;
