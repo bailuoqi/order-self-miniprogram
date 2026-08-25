@@ -29,8 +29,8 @@
       <button class="btn-pay" :disabled="paying" @click="doPay">
         {{ stage === 'deposit' ? '支付定金' : '支付尾款' }} ¥{{ fmtPrice(amount) }}
       </button>
-      <!-- 开发环境模拟支付 -->
-      <button class="btn-mock" :disabled="paying" @click="doMockPay">模拟支付成功（开发演示）</button>
+      <!-- 开发环境模拟支付（H5 宽屏加「演示环境」角标，见样式区 C6） -->
+      <button class="btn-mock" :disabled="paying" @click="doMockPay">模拟支付成功（开发演示）<!-- #ifdef H5 --><text class="demo-badge">演示环境</text><!-- #endif --></button>
     </view>
   </view>
 </template>
@@ -133,4 +133,38 @@ const doMockPay = async () => {
 .pay-submit { padding: 30rpx; padding-bottom: calc(30rpx + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 20rpx; }
 .btn-pay { width: 100%; height: 88rpx; line-height: 88rpx; background: linear-gradient(135deg, #2979FF, #1565C0); color: #fff; font-size: 32rpx; border-radius: 44rpx; text-align: center; border: none; font-weight: 600; padding: 0; }
 .btn-mock { width: 100%; height: 80rpx; line-height: 80rpx; background: #fff; color: var(--warning); font-size: 28rpx; border-radius: 40rpx; text-align: center; border: 2rpx solid var(--warning); font-weight: 600; padding: 0; }
+
+/* #ifdef H5 */
+/* ==================== 桌面适配（任务 C6，仅 H5 编译，不进小程序包） ==================== */
+
+/* ≥768px：金额卡 + 支付方式卡 + 按钮区整体居中 560px（规划书 §4.9） */
+.pay-amount,
+.pay-methods,
+.pay-submit {
+  @include content-limit($content-max-pay);
+}
+
+/* 「演示环境」角标仅宽屏显示（窄屏 H5 维持现状按钮文案） */
+.demo-badge { display: none; }
+
+@include screen-tablet-up {
+  .pay-amount { padding: 60rpx 30rpx; }
+
+  .btn-mock { position: relative; }
+
+  .demo-badge {
+    display: block;
+    position: absolute;
+    top: -10px;
+    right: 16px;
+    background: var(--warning);
+    color: #fff;
+    font-size: 11px;
+    line-height: 1;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+}
+/* #endif */
 </style>

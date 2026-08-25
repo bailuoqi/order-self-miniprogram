@@ -2,14 +2,14 @@
   <view class="page-order-list">
     <!-- 状态Tab -->
     <scroll-view scroll-x class="tabs" :show-scrollbar="false">
-      <view v-for="tab in tabs" :key="tab.key" class="tab-item" :class="{ active: activeTab === tab.key }" @click="switchTab(tab.key)">
+      <view v-for="tab in tabs" :key="tab.key" class="tab-item clickable" :class="{ active: activeTab === tab.key }" @click="switchTab(tab.key)">
         <text>{{ tab.label }}</text>
       </view>
     </scroll-view>
 
     <!-- 订单列表 -->
     <scroll-view scroll-y class="order-list" @scrolltolower="loadMore">
-      <view class="order-card" v-for="order in orders" :key="order.id" @click="goDetail(order)">
+      <view class="order-card hover-lift" v-for="order in orders" :key="order.id" @click="goDetail(order)">
         <!-- 订单头 -->
         <view class="order-header">
           <text class="order-no">{{ order.source === 'custom' ? '自定义需求' : '标准服务' }} · {{ order.order_no }}</text>
@@ -128,4 +128,29 @@ const statusColor = (s) => ORDER_STATUS_COLOR[s] || '#999';
 .btn-action.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
 
 .loading, .empty { text-align: center; padding: 40rpx; color: var(--text-light); }
+
+/* #ifdef H5 */
+/* ==================== 桌面适配（任务 C3，仅 H5 编译，不进小程序包） ==================== */
+
+/* ≥768px：订单列表（含卡片）限宽 1200px 居中；tabs 白条铺满全宽、项目居中（规划书 §4.6） */
+.order-list {
+  @include content-limit($content-max-page);
+}
+
+@include screen-tablet-up {
+  /* 宽屏下页面被框架放进扣除 topWindow 的 uni-content 容器里，而 --window-top 只含页头高度，
+     需同时扣掉 --top-window-height（uni-h5 注入在 :root），否则页面超高出现外层滚动条 */
+  .page-order-list { height: calc(100vh - var(--window-top) - var(--top-window-height, 0px)); }
+
+  /* 放开 flex 子项 min-height:auto 的内容撑高，让列表滚动发生在 scroll-view 内部，
+     桌面滚轮才能触底触发 scrolltolower 加载更多（任务 C3 验证项） */
+  .order-list { min-height: 0; }
+
+  .tabs { text-align: center; }
+  .tab-item { padding: 28rpx 36rpx; }
+
+  .order-card { padding: 32rpx; }
+  .btn-action { padding: 14rpx 32rpx; }
+}
+/* #endif */
 </style>
