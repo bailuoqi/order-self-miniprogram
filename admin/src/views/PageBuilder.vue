@@ -19,6 +19,7 @@
 </div>
 </div>
 <div class="toolbar-right">
+<button v-if="revisionsAvailable" class="tool-btn" @click="showRevisions=true"><i class="ri-time-line"></i> 历史</button>
 <button class="tool-btn" @click="showTemplates=true"><i class="ri-layout-line"></i> 模板</button>
 <button class="tool-btn" @click="showGlobal=true"><i class="ri-settings-3-line"></i> 全局</button>
 <button class="btn btn-outline btn-sm" title="Ctrl+S" @click="saveDraft">保存草稿</button>
@@ -29,8 +30,8 @@
 </div>
 </div>
 <div class="notice-strip">
-<i class="ri-information-line"></i>
-<span>装修配置暂未接通客户端首页展示（二期接通）——保存/发布仅写入 page-config，小程序首页当前仍为固定版式。草稿存 <code>home-draft</code>，发布写 <code>home</code>。</span>
+<i class="ri-plug-line"></i>
+<span>已接通：发布后客户端首页按本配置渲染；标注「客户端不渲染 / 已停用」的组件会被客户端跳过。草稿存 <code>home-draft</code>（客户端可用 <code>?preview=draft</code> 预览），发布写 <code>home</code>。</span>
 </div>
 <div class="builder-body" v-show="!previewMode">
 <div class="lib-panel">
@@ -39,14 +40,14 @@
 </div>
 <div class="lib-list">
 <div v-for="c in libGroups[libTab]" :key="c.type" class="lib-item" draggable="true"
-  :title="c.noData?'该组件当前无后端数据，仅作版式占位':''"
+  :title="c.noClient?'客户端首页不渲染该组件，仅后台画布展示':''"
   @dragstart="onLibDrag($event,c)" @dragend="onDragEnd">
 <div class="lib-icon"><i :class="c.icon"></i></div>
 <div class="lib-name">{{c.label}}</div>
-<span v-if="c.noData" class="lib-badge">无数据支撑</span>
+<span v-if="c.noClient" class="lib-badge">客户端不渲染</span>
 </div>
 </div>
-<div class="lib-foot"><i class="ri-plug-line"></i> 组件的线上渲染将于二期接通客户端首页</div>
+<div class="lib-foot"><i class="ri-plug-line"></i> 已接通客户端：发布后首页按配置渲染</div>
 </div>
 <div class="canvas-panel" ref="canvasPanelEl" @click.self="selIdx=-1">
 <div class="phone-scale-wrap" :style="{width:phoneSize.w*scale+'px',height:phoneSize.h*scale+'px'}">
@@ -68,9 +69,10 @@
 <span class="s-comp-name">{{getCompLabel(c.type)}}</span>
 <button @click.stop="moveUp(i)" :disabled="i===0"><i class="ri-arrow-up-s-line"></i></button>
 <button @click.stop="moveDown(i)" :disabled="i===components.length-1"><i class="ri-arrow-down-s-line"></i></button>
-<button @click.stop="copyComp(i)"><i class="ri-file-copy-line"></i></button>
+<button v-if="!isDeprecatedType(c.type)" @click.stop="copyComp(i)"><i class="ri-file-copy-line"></i></button>
 <button @click.stop="delComp(i)" class="del"><i class="ri-delete-bin-line"></i></button>
 </div>
+<span v-if="isNoClientType(c.type)" class="s-nr-badge">客户端不渲染</span>
 <CompRenderer :type="c.type" :props="c.props" :global="global" />
 </div>
 <div v-if="!components.length" :class="['s-empty',{active:!!dragPayload}]">
@@ -145,6 +147,7 @@
 <div class="gf-row"><label>导航背景</label><input type="color" v-model="global.navBgColor" class="fcolor" /></div>
 <div class="gf-row"><label>导航文字</label><input type="color" v-model="global.navTextColor" class="fcolor" /></div>
 <div class="gf-row"><label>显示底部栏</label><label class="switch-sm"><input type="checkbox" v-model="global.showTabbar" /> 显示</label></div>
+<div class="gf-hint">底部栏仅画布示意：客户端 tabBar 由小程序 pages.json 固定，此处配置不会下发到客户端</div>
 <template v-if="global.showTabbar">
 <div class="gf-row" v-for="(t,i) in global.tabItems" :key="i">
 <label>Tab {{i+1}}</label>
@@ -187,6 +190,19 @@
 </div>
 </div>
 </div>
+<div v-if="showPublishOk" class="modal-overlay" @click.self="showPublishOk=false">
+<div class="modal-box" style="width:480px">
+<h3><i class="ri-checkbox-circle-fill" style="color:#52c41a"></i> 发布成功</h3>
+<p style="color:#888;margin:12px 0;line-height:1.6">客户端首页将按本次发布的配置渲染；标注「客户端不渲染 / 已停用」的组件会被客户端跳过。</p>
+<div class="pub-copy-row">
+<input class="fi" readonly :value="draftPreviewPath" @focus="$event.target.select()" />
+<button class="btn btn-outline btn-sm" @click="copyPreviewPath">{{previewCopied?'已复制':'复制客户端草稿预览地址'}}</button>
+</div>
+<p class="pub-copy-hint">草稿预览：将该路径拼接到客户端 H5 访问域名后打开（如 https://客户端域名{{draftPreviewPath}}），页面带「草稿预览」角标；线上首页无需带参数。</p>
+<div style="text-align:right;margin-top:12px"><button class="btn btn-primary btn-sm" @click="showPublishOk=false">知道了</button></div>
+</div>
+</div>
+<RevisionDrawer v-if="showRevisions" page-key="home" @close="showRevisions=false" @rolled-back="onRolledBack" />
 </div>
 </template>
 
@@ -196,14 +212,14 @@ import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import CompRenderer from '@/components/CompRenderer.vue'
 import PropsEditor from '@/components/PropsEditor.vue'
 import LayerList from '@/components/builder/LayerList.vue'
+import RevisionDrawer from '@/components/builder/RevisionDrawer.vue'
 import api from '@/api'
 
 const router = useRouter()
 
-// ---- Component Libraries ----
+// ---- Component Libraries（营销 tab 二期下架，见 deprecatedComps） ----
 const libTabs = [
   { key: 'basic', label: '基础' },
-  { key: 'market', label: '营销' },
   { key: 'content', label: '内容' },
   { key: 'tool', label: '工具' },
 ]
@@ -212,36 +228,45 @@ const libTab = ref('basic')
 const baseComps = [
   { type: 'banner', label: '轮播图', icon: 'ri-image-line', defaultProps: { images: [], height: 160, interval: 3000, dots: true, radius: 8 } },
   { type: 'search', label: '搜索栏', icon: 'ri-search-line', defaultProps: { placeholder: '搜索服务', bgColor: '#fff', radius: 20, hotWords: [] } },
-  { type: 'notice', label: '公告栏', icon: 'ri-volume-up-line', defaultProps: { text: '重要通知内容', ico: 'ri-volume-up-line', bgColor: '#fff7e6', color: '#fa8c16', speed: 40 } },
+  { type: 'notice', label: '公告栏', icon: 'ri-volume-up-line', defaultProps: { text: '重要通知内容', ico: 'ri-volume-up-line', bgColor: '#fff7e6', color: '#fa8c16' } },
   { type: 'navGrid', label: '导航宫格', icon: 'ri-apps-line', defaultProps: { items: [{ icon: 'ri-service-line', name: '服务', link: '' },{ icon: 'ri-calendar-line', name: '预约', link: '' },{ icon: 'ri-star-line', name: '推荐', link: '' },{ icon: 'ri-more-line', name: '更多', link: '' }], columns: 4, gutter: 8 } },
   { type: 'titleBar', label: '标题栏', icon: 'ri-text', defaultProps: { title: '热门推荐', subtitle: '', moreText: '更多', moreLink: '', align: 'left' } },
-  { type: 'imageAd', label: '图片广告', icon: 'ri-advertisement-line', defaultProps: { src: '', link: '', width: '100%', height: 120, radius: 8 } },
-]
-
-// 营销组件后端无数据支撑（无 coupon 等模块），保留演示能力但如实标注
-const marketComps = [
-  { type: 'coupon', label: '优惠券', icon: 'ri-coupon-line', noData: true, defaultProps: { coupons: [], style: 'card', showCount: 3 } },
-  { type: 'countdown', label: '倒计时', icon: 'ri-timer-line', noData: true, defaultProps: { endTime: '', title: '限时抢购', bgColor: '#ff4d4f', color: '#fff' } },
-  { type: 'groupBuy', label: '拼团', icon: 'ri-group-line', noData: true, defaultProps: { title: '拼团活动', products: [] } },
-  { type: 'seckill', label: '秒杀', icon: 'ri-flashlight-line', noData: true, defaultProps: { title: '秒杀专区', products: [], showPrice: true, showProgress: true } },
+  // imageAd 不再提供 width（客户端恒 100% 宽）
+  { type: 'imageAd', label: '图片广告', icon: 'ri-advertisement-line', defaultProps: { src: '', link: '', height: 120, radius: 8 } },
 ]
 
 const contentComps = [
   { type: 'goodsRow', label: '商品行', icon: 'ri-shopping-bag-3-line', defaultProps: { title: '精选商品', goods: [], layout: 'scroll', showBadge: true, columns: 2 } },
-  { type: 'articleList', label: '文章列表', icon: 'ri-article-line', defaultProps: { title: '最新资讯', count: 3, showCover: true, showDate: true, cmsType: '' } },
-  { type: 'videoPlayer', label: '视频播放', icon: 'ri-video-line', defaultProps: { src: '', poster: '', autoplay: false, height: 200 } },
+  { type: 'articleList', label: '文章列表', icon: 'ri-article-line', noClient: true, defaultProps: { title: '最新资讯', count: 3, showCover: true, showDate: true, cmsType: '' } },
+  { type: 'videoPlayer', label: '视频播放', icon: 'ri-video-line', noClient: true, defaultProps: { src: '', poster: '', autoplay: false, height: 200 } },
   { type: 'richText', label: '富文本', icon: 'ri-file-text-line', defaultProps: { content: '<p>编辑内容...</p>', padding: 12 } },
 ]
 
 const toolComps = [
-  { type: 'floatingBtn', label: '悬浮按钮', icon: 'ri-customer-service-2-line', defaultProps: { text: '客服', ico: 'ri-customer-service-2-line', position: 'right', bottom: 80, link: '' } },
+  { type: 'floatingBtn', label: '悬浮按钮', icon: 'ri-customer-service-2-line', noClient: true, defaultProps: { text: '客服', ico: 'ri-customer-service-2-line', position: 'right', bottom: 80, link: '' } },
   { type: 'divider', label: '分割线', icon: 'ri-separator', defaultProps: { height: 1, color: '#eee', margin: '12px 0', style: 'solid' } },
   { type: 'blank', label: '空白占位', icon: 'ri-layout-bottom-line', defaultProps: { height: 10, bgColor: 'transparent' } },
 ]
 
-const allComps = [...baseComps, ...marketComps, ...contentComps, ...toolComps]
-const libGroups = { basic: baseComps, market: marketComps, content: contentComps, tool: toolComps }
-const compMeta = Object.fromEntries(allComps.map(c => [c.type, { label: c.label, icon: c.icon }]))
+// 营销组件二期下架（产品无优惠券/秒杀业务模型）：不可再添加；
+// 存量实例画布显示停用占位、可选中删除、发布数据原样保留（客户端按未知类型跳过）
+const deprecatedComps = [
+  { type: 'coupon', label: '优惠券' },
+  { type: 'countdown', label: '倒计时' },
+  { type: 'groupBuy', label: '拼团' },
+  { type: 'seckill', label: '秒杀' },
+]
+const deprecatedTypeSet = new Set(deprecatedComps.map(c => c.type))
+function isDeprecatedType(type) { return deprecatedTypeSet.has(type) }
+
+const allComps = [...baseComps, ...contentComps, ...toolComps]
+const libGroups = { basic: baseComps, content: contentComps, tool: toolComps }
+const noClientTypeSet = new Set(allComps.filter(c => c.noClient).map(c => c.type))
+function isNoClientType(type) { return noClientTypeSet.has(type) }
+const compMeta = {
+  ...Object.fromEntries(allComps.map(c => [c.type, { label: c.label, icon: c.icon }])),
+  ...Object.fromEntries(deprecatedComps.map(c => [c.type, { label: c.label + '（已停用）', icon: 'ri-forbid-line' }])),
+}
 
 // ---- State ----
 const previewMode = ref(false)
@@ -318,14 +343,22 @@ const isDirty = computed(() => !loading.value && serializeState() !== lastSavedS
 // ---- Draft / Publish channel state ----
 const draftUnpublished = ref(false)
 const publishedStr = ref('')
+const showPublishOk = ref(false)
+const previewCopied = ref(false)
+// 客户端 H5 为 hash 路由：拼接到客户端域名后访问，首页读 home-draft 并带「草稿预览」角标
+const draftPreviewPath = '/#/?preview=draft'
+
+// ---- Revision history（C2 服务端通道；接口不可用即整体隐藏入口）----
+const revisionsAvailable = ref(false)
+const showRevisions = ref(false)
 
 // ---- Helpers ----
 let idCounter = Date.now()
 function genId() { return 'c_' + (idCounter++) }
 
 function getCompLabel(type) {
-  const c = allComps.find(x => x.type === type)
-  return c ? c.label : type
+  const m = compMeta[type]
+  return m ? m.label : type
 }
 
 function getCompDefaults(type) {
@@ -530,12 +563,11 @@ const templates = [
     ]
   },
   {
-    name: '营销风格', color: '#FF6B6B', preview: [28, 10, 20, 18, 14, 16, 12, 24],
+    // 二期营销组件下架：模板同步清理 countdown/coupon/seckill，以公告与商品栅格保留促销氛围
+    name: '营销风格', color: '#FF6B6B', preview: [28, 12, 18, 14, 24],
     components: [
-      { type: 'countdown', props: { endTime: '', title: '限时抢购', bgColor: '#ff4d4f', color: '#fff' } },
       { type: 'banner', props: { images: [], height: 150, dots: true, radius: 8 } },
-      { type: 'coupon', props: { coupons: [], style: 'card', showCount: 3 } },
-      { type: 'seckill', props: { title: '秒杀专区', products: [] } },
+      { type: 'notice', props: { text: '限时特惠进行中，联系客服获取报价', ico: 'ri-volume-up-line', bgColor: '#fff1f0', color: '#ff4d4f' } },
       { type: 'titleBar', props: { title: '爆款推荐', moreText: '全部' } },
       { type: 'goodsRow', props: { title: '', goods: [], layout: 'grid', columns: 2 } },
     ]
@@ -612,7 +644,7 @@ async function saveDraft() {
 function publish() {
   openConfirm(
     '确认发布',
-    '发布会把当前内容写入线上配置（page-config/home）并同步草稿。注意：客户端首页暂未接通装修配置（二期接通），发布不会立即改变小程序页面。确定发布？',
+    '发布会把当前内容写入线上配置（page-config/home）并同步草稿，客户端首页将按本配置渲染（标注「客户端不渲染 / 已停用」的组件会被跳过）。确定发布？',
     publishNow
   )
 }
@@ -621,21 +653,57 @@ async function publishNow() {
   if (loading.value || saveStatus.value === 'saving') return false
   lastSaveOp = 'publish'
   saveStatus.value = 'saving'
+  const payload = buildPayload()
+  let ok = false
+  // 优先走服务端发布通道（一次调用完成保存+发布并写入发布历史）；
+  // C2 端点未部署（404）或失败时回退一期双 PUT，任意合并顺序可用
   try {
-    const payload = buildPayload()
-    await api.put('/page-config/home', { config: payload })
-    // 同步草稿通道，避免下次进入时旧草稿覆盖已发布内容
-    await api.put('/page-config/home-draft', { config: payload })
-    lastSavedStr.value = serializeState()
-    publishedStr.value = lastSavedStr.value
-    draftUnpublished.value = false
-    markSaved()
-    return true
+    await api.post('/page-config/home/publish', { config: payload })
+    ok = true
+    // publish 端点在即说明服务端通道已部署，顺带探活历史入口
+    if (!revisionsAvailable.value) probeRevisions()
   } catch (e) {
-    console.error('Publish failed:', e)
+    try {
+      await api.put('/page-config/home', { config: payload })
+      // 同步草稿通道，避免下次进入时旧草稿覆盖已发布内容
+      await api.put('/page-config/home-draft', { config: payload })
+      ok = true
+    } catch (e2) {
+      console.error('Publish failed:', e2)
+    }
+  }
+  if (!ok) {
     saveStatus.value = 'error'
     return false
   }
+  lastSavedStr.value = serializeState()
+  publishedStr.value = lastSavedStr.value
+  draftUnpublished.value = false
+  markSaved()
+  previewCopied.value = false
+  showPublishOk.value = true
+  return true
+}
+
+async function copyPreviewPath() {
+  let copied = false
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(draftPreviewPath)
+      copied = true
+    }
+  } catch (e) { /* 非安全上下文等场景走降级 */ }
+  if (!copied) {
+    const ta = document.createElement('textarea')
+    ta.value = draftPreviewPath
+    ta.style.position = 'fixed'
+    ta.style.opacity = '0'
+    document.body.appendChild(ta)
+    ta.select()
+    try { copied = document.execCommand('copy') } catch (e) { copied = false }
+    document.body.removeChild(ta)
+  }
+  previewCopied.value = copied
 }
 
 function retryLast() {
@@ -677,6 +745,32 @@ async function loadConfig() {
   publishedStr.value = draftDiffers
     ? (published ? JSON.stringify({ components: published.components, global: published.global }) : '')
     : serializeState()
+}
+
+// ---- Revision history（探测 C2 revisions 端点：404/失败即整体隐藏历史入口）----
+async function probeRevisions() {
+  try {
+    await api.get('/page-config/home/revisions')
+    revisionsAvailable.value = true
+  } catch (e) {
+    revisionsAvailable.value = false
+  }
+}
+
+// 回滚成功：服务端已把目标版本写回 home 与 home-draft，重载画布并重打首帧快照
+async function onRolledBack() {
+  showRevisions.value = false
+  loading.value = true
+  selIdx.value = -1
+  try {
+    await loadConfig()
+  } finally {
+    loading.value = false
+    lastSavedStr.value = serializeState()
+    history.value = []
+    historyIdx.value = -1
+    saveHistory()
+  }
 }
 
 // ---- Keyboard Shortcuts（onMounted 挂载 / onUnmounted 注销，离开页面后不再劫持）----
@@ -733,6 +827,7 @@ onMounted(async () => {
     resizeObserver = new ResizeObserver(measurePhone)
     resizeObserver.observe(phoneEl.value)
   }
+  probeRevisions()
   try {
     await loadConfig()
   } finally {
@@ -782,7 +877,7 @@ onUnmounted(() => {
 .save-stat.err{color:#ff4d4f}
 .retry-btn{border:1px solid #ffa39e;background:#fff;color:#ff4d4f;border-radius:4px;font-size:11px;padding:2px 8px;cursor:pointer;margin-left:4px}
 .retry-btn:hover{background:#fff1f0}
-.notice-strip{display:flex;align-items:center;gap:8px;padding:6px 16px;background:#fffbe6;border-bottom:1px solid #ffe58f;color:#ad6800;font-size:12px;flex-shrink:0;line-height:1.5}
+.notice-strip{display:flex;align-items:center;gap:8px;padding:6px 16px;background:#e6f4ff;border-bottom:1px solid #91caff;color:#0958d9;font-size:12px;flex-shrink:0;line-height:1.5}
 .notice-strip i{font-size:14px;flex-shrink:0}
 .notice-strip code{background:rgba(0,0,0,.06);padding:0 4px;border-radius:3px;font-size:11px}
 .builder-body{display:flex;flex:1;overflow:hidden;position:relative}
@@ -822,6 +917,7 @@ onUnmounted(() => {
 .s-comp-bar button{background:none;border:none;color:#fff;cursor:pointer;padding:2px 4px;border-radius:3px;font-size:14px;display:flex;align-items:center}
 .s-comp-bar button:hover{background:rgba(255,255,255,.2)}
 .s-comp-bar button.del:hover{background:#ff4d4f}
+.s-nr-badge{position:absolute;top:4px;right:4px;z-index:5;font-size:9px;background:rgba(0,0,0,.45);color:#fff;padding:1px 6px;border-radius:8px;line-height:1.6;pointer-events:none}
 .s-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;color:#bbb;border:2px dashed #ddd;border-radius:10px;min-height:200px;transition:.15s}
 .s-empty.active{border-color:#2979FF;background:rgba(41,121,255,.05);color:#2979FF}
 .s-empty i{font-size:36px;margin-bottom:8px}
@@ -845,6 +941,11 @@ onUnmounted(() => {
 .global-form{display:flex;flex-direction:column;gap:10px}
 .gf-row{display:flex;align-items:center;gap:10px}
 .gf-row label{width:80px;font-size:13px;color:#555;flex-shrink:0}
+.gf-hint{font-size:11px;color:#bbb;line-height:1.5;margin:-4px 0 0 90px}
+.pub-copy-row{display:flex;gap:8px;align-items:center}
+.pub-copy-row .fi{background:#fafafa;color:#555}
+.pub-copy-row .btn{white-space:nowrap;flex-shrink:0}
+.pub-copy-hint{font-size:11px;color:#999;line-height:1.6;margin:8px 0 0}
 .fi{flex:1;padding:7px 10px;border:1px solid #d9d9d9;border-radius:6px;font-size:13px;outline:none}
 .fi:focus{border-color:#2979FF;box-shadow:0 0 0 2px rgba(41,121,255,.1)}
 .fcolor{width:32px;height:32px;border:none;border-radius:6px;cursor:pointer;padding:0}

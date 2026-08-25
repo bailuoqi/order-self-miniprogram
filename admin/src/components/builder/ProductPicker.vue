@@ -21,7 +21,7 @@
           <i v-else class="ri-image-line"></i>
         </span>
         <span class="pp-title">{{ prod.title }}</span>
-        <span class="pp-price">¥{{ prod.price }}</span>
+        <span class="pp-price">¥{{ fmtPriceFen(prod.price) }}</span>
       </label>
     </div>
     <div class="pp-foot">
@@ -35,8 +35,10 @@
 
 <script setup>
 // 商品行「选择服务」弹窗：GET /products 勾选，确定后返回 {id,title,price,cover} 快照数组
+// 注意：快照 price 按契约存「分」，仅展示时转元（与客户端 fmtPrice 一致）
 import { ref, onMounted } from 'vue'
 import api from '@/api'
+import { fmtPriceFen } from './preview-format'
 
 const props = defineProps({
   selected: { type: Array, default: () => [] },
