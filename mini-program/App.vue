@@ -6,6 +6,9 @@ onLaunch(() => {
   console.log("App Launch");
   // 尝试自动登录
   tryAutoLogin();
+  // #ifdef H5
+  setupDesktopTabBar();
+  // #endif
 });
 
 onShow(() => { console.log("App Show"); });
@@ -42,9 +45,34 @@ const tryAutoLogin = async () => {
   }
   // #endif
 };
+
+// #ifdef H5
+// 宽屏（≥768px，与 responsive.scss 的 $bp-tablet、topWindow.matchMedia 对齐）隐藏底部
+// tabBar、窄屏恢复。以下方样式里的 CSS 媒体查询为主，这里调用 uni.hideTabBar/showTabBar
+// 同步 uni 内部状态（--window-bottom 等），窗口动态拖拽变宽变窄时双保险。
+const setupDesktopTabBar = () => {
+  const mediaQuery = window.matchMedia("(min-width: 768px)");
+  const applyTabBarVisible = () => {
+    if (mediaQuery.matches) {
+      uni.hideTabBar({ animation: false, fail: () => {} });
+    } else {
+      uni.showTabBar({ animation: false, fail: () => {} });
+    }
+  };
+  applyTabBarVisible();
+  if (typeof mediaQuery.addEventListener === "function") {
+    mediaQuery.addEventListener("change", applyTabBarVisible);
+  } else if (typeof mediaQuery.addListener === "function") {
+    // 兼容不支持 addEventListener 的旧浏览器
+    mediaQuery.addListener(applyTabBarVisible);
+  }
+};
+// #endif
 </script>
 
 <style lang="scss">
+/* 断点变量与桌面适配混入（common/responsive.scss）已经由 uni.scss 全局注入，
+   本文件及各页 <style lang="scss"> 可直接使用 $bp-tablet 等变量与混入 */
 @import "@/static/fonts/remixicon-trimmed.css";
 
 page {
@@ -90,4 +118,54 @@ page {
 .rounded { border-radius: var(--radius); }
 .bg-white { background: var(--bg-card); }
 .card { background: var(--bg-card); border-radius: var(--radius); padding: 30rpx; box-shadow: var(--shadow); }
+
+/* #ifdef H5 */
+/* ==================== 桌面适配 · 全局壳（仅 H5 编译，不进小程序包） ==================== */
+
+/* 内容限宽变量：供各页媒体查询引用，与 common/responsive.scss 的 SCSS 变量一一对应 */
+page {
+  --content-max-page: 1200px;
+  --content-max-form: 760px;
+  --content-max-chat: 960px;
+  --content-max-pay: 560px;
+}
+
+/* A4：宽屏隐藏底部 tabBar（uni-tabbar 元素含 tab 条与占位符）。
+   脚本里的 matchMedia 监听调用 uni.hideTabBar/showTabBar 同步 --window-bottom，互为兜底。 */
+@media (min-width: $bp-tablet) {
+  uni-tabbar.uni-tabbar-bottom {
+    display: none !important;
+  }
+}
+
+/* A5：桌面指针与 hover 反馈，仅在支持 hover 的精确指针设备（鼠标）生效 */
+@media (hover: hover) and (pointer: fine) {
+  uni-button,
+  uni-navigator,
+  uni-label,
+  uni-checkbox,
+  uni-radio,
+  uni-switch,
+  uni-picker,
+  .clickable {
+    cursor: pointer;
+  }
+
+  uni-button:hover,
+  .clickable:hover {
+    opacity: 0.88;
+  }
+
+  /* 供各页给卡片/条目在模板上追加 class 使用的悬停反馈（模板只允许加 class 不动逻辑） */
+  .hover-lift {
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  }
+}
+/* #endif */
 </style>
