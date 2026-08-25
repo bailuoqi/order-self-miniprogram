@@ -1,6 +1,6 @@
 <template>
   <view class="page-chat-room">
-    <view class="order-bar" v-if="orderTitle" @click="goOrder">
+    <view class="order-bar clickable" v-if="orderTitle" @click="goOrder">
       <i class="ri-file-list-3-line" style="font-size:28rpx;color:#2979FF;" />
       <text class="ob-title">{{ orderTitle }}</text>
       <text class="ob-link">查看订单 ›</text>
@@ -15,7 +15,7 @@
           <text class="msg-sender" v-if="m.from_team">{{ m.sender_name || '团队' }}</text>
           <view class="msg-bubble" :class="m.from_team ? 'other' : 'self'">
             <text v-if="m.type === 'text' || !m.type">{{ m.content }}</text>
-            <image v-if="m.type === 'image'" :src="m.content" mode="widthFix" class="msg-img" @click="preview(m.content)" />
+            <image v-if="m.type === 'image'" :src="m.content" mode="widthFix" class="msg-img clickable" @click="preview(m.content)" />
           </view>
         </view>
         <view class="msg-avatar me" v-if="!m.from_team">
@@ -31,7 +31,7 @@
       <view class="input-wrap">
         <input class="msg-input" v-model="inputText" placeholder="输入消息..." confirm-type="send" @confirm="sendMsg" />
       </view>
-      <text class="send-btn" @click="sendMsg">发送</text>
+      <text class="send-btn clickable" @click="sendMsg">发送</text>
     </view>
   </view>
 </template>
@@ -122,4 +122,26 @@ const goOrder = () => {
 .input-wrap { flex: 1; background: var(--bg-page); border-radius: 36rpx; padding: 12rpx 24rpx; }
 .msg-input { width: 100%; font-size: 28rpx; line-height: 1.4; }
 .send-btn { flex-shrink: 0; font-size: 28rpx; color: var(--primary); font-weight: 700; padding: 10rpx 20rpx; }
+
+/* #ifdef H5 */
+/* ==================== 桌面适配（规划书 §4.8 / 任务 D1，仅 H5 编译，不进小程序包） ==================== */
+/* 顶部订单条、消息列表、输入条同宽：整列限宽 960px 居中 */
+.order-bar { @include content-limit($content-max-chat); }
+.msg-list { @include content-limit($content-max-chat); }
+.input-bar { @include content-limit($content-max-chat); }
+
+@media (min-width: $bp-tablet) {
+  /* 宽屏下 topWindow 顶栏 + 页头占据 --window-top，用剩余视口高度，避免输入条被顶出屏外 */
+  .page-chat-room { height: calc(100vh - var(--window-top)); }
+  .order-bar { border-radius: 0 0 12px 12px; }
+  .msg-list { padding: 24px; }
+  /* 气泡最大宽度由固定 480rpx 放宽到列宽百分比（约 60%） */
+  .msg-wrap { max-width: 62%; }
+  .msg-img { max-width: 320px; }
+  .input-bar { border-radius: 12px 12px 0 0; padding: 12px 16px; gap: 12px; }
+  .input-wrap { padding: 10px 18px; border-radius: 20px; }
+  /* 发送键在桌面呈按钮态（Enter 发送依赖 input 的 confirm-type="send"，逻辑不动） */
+  .send-btn { background: var(--primary); color: #fff; border-radius: 18px; padding: 8px 22px; font-size: 14px; }
+}
+/* #endif */
 </style>

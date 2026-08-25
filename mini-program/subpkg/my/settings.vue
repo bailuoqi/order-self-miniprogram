@@ -1,29 +1,29 @@
 <template>
   <view class="page-settings">
     <view class="menu card">
-      <view class="menu-item" @click="editProfile">
+      <view class="menu-item clickable" @click="editProfile">
         <view class="ri-tab-my" style="font-size:36rpx;" /><text class="mi-label">个人信息</text><view class="ri-arrow-right-s-line" style="font-size:32rpx;" />
       </view>
-      <view class="menu-item" @click="goAddress">
+      <view class="menu-item clickable" @click="goAddress">
         <view class="ri-map-pin-2-line" style="font-size:36rpx;" /><text class="mi-label">地址管理</text><view class="ri-arrow-right-s-line" style="font-size:32rpx;" />
       </view>
       <view class="menu-item">
         <view class="ri-notification-3-line" style="font-size:36rpx;" /><text class="mi-label">消息通知</text>
         <switch :checked="notifyEnabled" @change="notifyEnabled = $event.detail.value" color="#2979FF" />
       </view>
-      <view class="menu-item" @click="clearCache">
+      <view class="menu-item clickable" @click="clearCache">
         <view class="ri-refresh-line" style="font-size:36rpx;" /><text class="mi-label">清除缓存</text>
         <text class="mi-value">12.5MB</text><view class="ri-arrow-right-s-line" style="font-size:32rpx;" />
       </view>
     </view>
     <view class="menu card">
-      <view class="menu-item" @click="goAbout">
+      <view class="menu-item clickable" @click="goAbout">
         <view class="ri-information-line" style="font-size:36rpx;" /><text class="mi-label">关于我们</text><view class="ri-arrow-right-s-line" style="font-size:32rpx;" />
       </view>
-      <view class="menu-item" @click="goPrivacy">
+      <view class="menu-item clickable" @click="goPrivacy">
         <view class="ri-eye-2-line" style="font-size:36rpx;" /><text class="mi-label">隐私政策</text><view class="ri-arrow-right-s-line" style="font-size:32rpx;" />
       </view>
-      <view class="menu-item" @click="goAgreement">
+      <view class="menu-item clickable" @click="goAgreement">
         <view class="ri-check-line" style="font-size:36rpx;background:var(--primary);border-radius:50%;" /><text class="mi-label">用户协议</text><view class="ri-arrow-right-s-line" style="font-size:32rpx;" />
       </view>
     </view>
@@ -75,4 +75,16 @@ const goPage = (url) => uni.navigateTo({ url });
 .mi-value { font-size: 26rpx; color: var(--text-light); }
 .logout-area { padding: 40rpx 0; }
 .btn-logout { width: 100%; height: 88rpx; line-height: 88rpx; background: #fff; color: var(--danger); font-size: 30rpx; border-radius: 44rpx; border: 2rpx solid var(--danger); display: flex; align-items: center; justify-content: center; }
+
+/* #ifdef H5 */
+/* ==================== 桌面适配（规划书 §4.13 / 任务 D5，仅 H5 编译，不进小程序包） ==================== */
+/* 菜单卡与退出区统一居中 760px */
+.menu { @include content-limit($content-max-form); }
+.logout-area { @include content-limit($content-max-form); }
+
+@media (min-width: $bp-tablet) {
+  .page-settings { padding: 24px 20px; }
+  .btn-logout { max-width: 320px; margin: 0 auto; }
+}
+/* #endif */
 </style>

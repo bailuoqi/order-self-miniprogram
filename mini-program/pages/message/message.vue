@@ -1,6 +1,6 @@
 <template>
   <view class="page-message">
-    <view class="msg-item" v-for="s in sessions" :key="s.id" @click="goRoom(s)">
+    <view class="msg-item clickable" v-for="s in sessions" :key="s.id" @click="goRoom(s)">
       <view class="msg-ri-wrap">
         <i class="ri-customer-service-2-line" style="font-size:36rpx;color:#fff;" />
       </view>
@@ -57,4 +57,22 @@ const goRoom = (s) => {
 .msg-badge { min-width: 32rpx; height: 32rpx; line-height: 32rpx; text-align: center; background: var(--danger); color: #fff; font-size: 20rpx; border-radius: 16rpx; padding: 0 8rpx; flex-shrink: 0; }
 .empty { text-align: center; padding: 120rpx 40rpx; color: var(--text-light); display: flex; flex-direction: column; gap: 12rpx; }
 .empty-sub { font-size: 22rpx; color: #ccc; }
+
+/* #ifdef H5 */
+/* ==================== 桌面适配（规划书 §4.10 / 任务 D2，仅 H5 编译，不进小程序包） ==================== */
+/* 会话列表整体限宽 960px 居中，页面灰底铺满、白色列表列居中 */
+.page-message { @include content-limit($content-max-chat); }
+
+@media (min-width: $bp-tablet) {
+  .page-message { min-height: calc(100vh - var(--window-top)); }
+  /* 行内间距与头像微调 */
+  .msg-item { padding: 20px 24px; gap: 14px; }
+  .msg-ri-wrap { width: 48px; height: 48px; }
+}
+
+/* 桌面鼠标悬停反馈（触屏不受影响） */
+@media (hover: hover) and (pointer: fine) {
+  .msg-item:hover { background: #F7F9FC; }
+}
+/* #endif */
 </style>
