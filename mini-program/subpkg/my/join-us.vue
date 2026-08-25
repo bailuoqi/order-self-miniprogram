@@ -1,5 +1,34 @@
 <template>
   <view class="page-join">
+    <!-- #ifdef H5 -->
+    <!-- 桌面（≥768px）申请流程条：窄屏隐藏与小程序保持一致 -->
+    <view class="desk-steps">
+      <view class="ds-item">
+        <text class="ds-num">1</text>
+        <view class="ds-info">
+          <text class="ds-name">提交申请</text>
+          <text class="ds-desc">填写姓名、联系方式与擅长方向</text>
+        </view>
+      </view>
+      <text class="ds-arrow">›</text>
+      <view class="ds-item">
+        <text class="ds-num">2</text>
+        <view class="ds-info">
+          <text class="ds-name">管理员审核</text>
+          <text class="ds-desc">结合简介与作品说明评估</text>
+        </view>
+      </view>
+      <text class="ds-arrow">›</text>
+      <view class="ds-item">
+        <text class="ds-num">3</text>
+        <view class="ds-info">
+          <text class="ds-name">通过后联系</text>
+          <text class="ds-desc">创建团队账号并与你对接</text>
+        </view>
+      </view>
+    </view>
+    <!-- #endif -->
+
     <!-- 已有申请 -->
     <view class="card status-card" v-if="myApplication">
       <i :class="statusIcon" :style="{ fontSize: '80rpx', color: statusColor }" />
@@ -65,6 +94,25 @@
         <button class="sb-btn" :disabled="!canSubmit || submitting" @click="submit">提交申请</button>
       </view>
     </template>
+
+    <!-- #ifdef H5 -->
+    <!-- 桌面（≥768px）申请须知：填充宽屏下表单列下方的空档 -->
+    <view class="desk-faq">
+      <text class="dfq-title">申请须知</text>
+      <view class="dfq-item">
+        <text class="dfq-q">需要什么方向的伙伴？</text>
+        <text class="dfq-a">软件方向（小程序 / 网站 / 脚本工具 / 系统开发等）与电子方向（PCB、焊接组装、单片机、电路设计等），两者都会更佳。</text>
+      </view>
+      <view class="dfq-item">
+        <text class="dfq-q">审核结果在哪里看？</text>
+        <text class="dfq-a">管理员会尽快审核，结果会展示在本页，请保持申请中填写的联系方式畅通。</text>
+      </view>
+      <view class="dfq-item">
+        <text class="dfq-q">未通过可以再申请吗？</text>
+        <text class="dfq-a">可以。完善简介与作品说明后，可在本页重新提交申请。</text>
+      </view>
+    </view>
+    <!-- #endif -->
   </view>
 </template>
 
@@ -212,18 +260,40 @@ const submit = async () => {
 .status-card { @include content-limit($content-max-form); }
 .intro-card { @include content-limit($content-max-form); }
 .info-card { @include content-limit($content-max-form); }
+.desk-steps { @include content-limit($content-max-form); }
+.desk-faq { @include content-limit($content-max-form); }
 .submit-bar { @include fixed-bar-limit($content-max-form); }
+
+/* 桌面辅助内容（流程条 / 申请须知）：窄屏一律隐藏，保持与小程序视觉一致 */
+.desk-steps,
+.desk-faq { display: none; }
 
 @media (min-width: $bp-tablet) {
   /* 100vh 未扣页头与 topWindow 高度会使短内容页凭空多出约 105px 空滚动 */
   .page-join { min-height: calc(100vh - var(--window-top) - var(--top-window-height, 0px)); box-sizing: border-box; }
-  .status-card { margin-top: 24px; }
-  .intro-card { margin-top: 24px; }
+  .status-card { margin-top: 16px; }
+  .intro-card { margin-top: 16px; }
   .info-card { padding: 8px 24px; }
   /* 桌面下给简介/作品说明更高的输入区，避免大屏上输入过矮 */
   .ic-textarea { min-height: 120px; }
   .submit-bar { border-radius: 12px 12px 0 0; padding: 12px 24px; }
   .sb-btn { max-width: 320px; margin: 0 auto; }
+
+  /* 申请流程三步条 */
+  .desk-steps { display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 12px; padding: 18px 24px; margin-top: 24px; box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04); }
+  .ds-item { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .ds-num { width: 26px; height: 26px; line-height: 26px; text-align: center; border-radius: 50%; background: var(--primary-light); color: var(--primary-dark); font-size: 13px; font-weight: 700; flex-shrink: 0; }
+  .ds-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .ds-name { font-size: 14px; font-weight: 600; color: var(--text-main); }
+  .ds-desc { font-size: 12px; color: var(--text-light); line-height: 1.5; }
+  .ds-arrow { color: #ccc; font-size: 16px; flex-shrink: 0; }
+
+  /* 申请须知问答卡 */
+  .desk-faq { display: block; background: #fff; border-radius: 12px; padding: 20px 24px; margin: 20px auto 40px; box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04); }
+  .dfq-title { display: block; font-size: 15px; font-weight: 700; color: var(--text-main); margin-bottom: 8px; }
+  .dfq-item { padding: 8px 0; }
+  .dfq-q { display: block; font-size: 13px; font-weight: 600; color: var(--text-main); }
+  .dfq-a { display: block; font-size: 13px; color: var(--text-secondary); line-height: 1.7; margin-top: 4px; }
 }
 /* #endif */
 </style>

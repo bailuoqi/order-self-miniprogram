@@ -23,6 +23,14 @@
       </view>
     </view>
 
+    <!-- #ifdef H5 -->
+    <!-- 桌面（≥768px）评价小贴士：窄屏隐藏与小程序保持一致 -->
+    <view class="desk-review-tip">
+      <i class="ri-information-line drt-icon" />
+      <text class="drt-text">评价会帮助团队改进服务，优质评价可能展示在首页「客户评价」区；勾选匿名可隐藏您的昵称。评价提交后可在订单详情随时查看。</text>
+    </view>
+    <!-- #endif -->
+
     <view class="submit-bar">
       <button class="sb-btn" :disabled="submitting" @click="submit">提交评价</button>
     </view>
@@ -85,8 +93,12 @@ const submit = async () => {
 /* #ifdef H5 */
 /* ==================== 桌面适配（任务 C7，仅 H5 编译，不进小程序包） ==================== */
 
-/* ≥768px：评价卡居中 760px（规划书 §4.9 / 任务 C7） */
+/* ≥768px：评价卡与小贴士居中 760px（规划书 §4.9 / 任务 C7） */
 .card {
+  @include content-limit($content-max-form);
+}
+
+.desk-review-tip {
   @include content-limit($content-max-form);
 }
 
@@ -95,8 +107,16 @@ const submit = async () => {
   @include fixed-bar-limit($content-max-form);
 }
 
+/* 桌面评价小贴士：窄屏一律隐藏，保持与小程序视觉一致 */
+.desk-review-tip { display: none; }
+
 @include screen-tablet-up {
   .card { padding: 48rpx; }
+
+  /* 评价小贴士行 */
+  .desk-review-tip { display: flex; align-items: flex-start; gap: 8px; padding: 14px 18px; margin-top: 16px; background: var(--primary-light); border-radius: 12px; }
+  .drt-icon { font-size: 16px; color: var(--primary-dark); flex-shrink: 0; margin-top: 2px; }
+  .drt-text { font-size: 12px; color: var(--primary-dark); line-height: 1.8; }
 
   /* 星级与输入区放大适配（星标字号需覆盖模板内联 rpx 值） */
   .star-row { margin: 48rpx 0; gap: 20rpx; }

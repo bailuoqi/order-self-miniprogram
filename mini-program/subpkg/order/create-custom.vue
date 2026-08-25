@@ -67,6 +67,17 @@
       <text>· 不承接作业代写、论文代写、替考、刷分等业务</text>
     </view>
 
+    <!-- #ifdef H5 -->
+    <!-- 桌面（≥768px）填写指引：窄屏隐藏与小程序保持一致 -->
+    <view class="desk-form-tips">
+      <text class="dft-title">怎样描述需求，报价更快？</text>
+      <text class="dft-line">· 软件类：写清功能清单、期望平台（小程序 / 网站 / 脚本工具）与参考案例</text>
+      <text class="dft-line">· 电子类：写清用途场景、数量，有原理图或参考实物可作为附件上传</text>
+      <text class="dft-line">· 附上预算范围与期望工期，团队能更快给出准确报价</text>
+      <text class="dft-line">· 文档类资料（pdf / 压缩包）可在下单后的聊天里留链接说明</text>
+    </view>
+    <!-- #endif -->
+
     <!-- 提交 -->
     <view class="submit-bar">
       <button class="sb-btn" :disabled="!canSubmit || submitting" @click="submit">发布需求，等待报价</button>
@@ -221,7 +232,8 @@ const submit = async () => {
 /* ≥768px：表单列居中 760px，页面背景仍铺满全宽（规划书 §4.5） */
 .flow-tip,
 .info-card,
-.notice-text {
+.notice-text,
+.desk-form-tips {
   @include content-limit($content-max-form);
 }
 
@@ -230,8 +242,16 @@ const submit = async () => {
   @include fixed-bar-limit($content-max-form);
 }
 
+/* 桌面填写指引：窄屏一律隐藏，保持与小程序视觉一致 */
+.desk-form-tips { display: none; }
+
 @include screen-tablet-up {
   .info-card { padding: 32rpx 36rpx; }
+
+  /* 填写指引卡：帮助电脑用户一次把需求写完整 */
+  .desk-form-tips { display: flex; flex-direction: column; gap: 6px; background: #fff; border-radius: 12px; padding: 18px 22px; margin-top: 16px; box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04); }
+  .dft-title { font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 2px; }
+  .dft-line { font-size: 12px; color: var(--text-secondary); line-height: 1.8; }
 
   /* 大屏输入区加高，避免桌面上输入框过矮 */
   .ic-textarea { min-height: 200px; }

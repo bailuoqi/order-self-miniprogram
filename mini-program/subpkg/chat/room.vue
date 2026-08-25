@@ -22,10 +22,24 @@
           <i class="ri-user-3-line" style="font-size:32rpx;color:#fff;" />
         </view>
       </view>
-      <view class="empty" v-if="!messages.length">
-        <text>就报价和需求细节，在这里与团队沟通</text>
+      <view class="empty-wrap" v-if="!messages.length">
+        <empty-state
+          icon="chat-3-line"
+          title="开始与团队沟通"
+          desc="就报价、需求细节、工期在这里与接单团队商议，聊天记录会一直保留"
+        />
+        <view class="quick-asks">
+          <view class="qa-chip clickable" v-for="q in quickAsks" :key="q" @click="inputText = q">{{ q }}</view>
+        </view>
       </view>
     </scroll-view>
+
+    <!-- #ifdef H5 -->
+    <!-- 桌面（≥768px）操作提示，窄屏隐藏与小程序保持一致 -->
+    <view class="desk-chat-hint">
+      <text>按 Enter 发送 · 新消息每 5 秒自动刷新 · 文档类资料可粘贴链接说明</text>
+    </view>
+    <!-- #endif -->
 
     <view class="input-bar">
       <view class="input-wrap">
@@ -40,10 +54,19 @@
 import { ref, onUnmounted } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { useChatStore } from '@/store/chat.js';
+import EmptyState from '@/components/empty-state.vue';
 
 const chatStore = useChatStore();
 const messages = ref([]);
 const inputText = ref('');
+
+/** 空会话时的快捷开场语：点击填入输入框，可编辑后发送 */
+const quickAsks = [
+  '麻烦尽快评估报价，谢谢',
+  '我的预算范围是：',
+  '期望工期是：',
+  '需求细节补充：',
+];
 const sessionId = ref(0);
 const orderId = ref(0);
 const orderTitle = ref('');
@@ -122,7 +145,10 @@ const goOrder = () => {
 .msg-bubble.other { background: #fff; border-top-left-radius: 4rpx; }
 .msg-bubble.self { background: var(--primary-light); border-top-right-radius: 4rpx; }
 .msg-img { max-width: 300rpx; border-radius: 8rpx; display: block; }
-.empty { text-align: center; padding: 100rpx 40rpx; color: var(--text-light); font-size: 26rpx; }
+.empty-wrap { display: flex; flex-direction: column; align-items: center; padding-top: 40rpx; }
+.quick-asks { display: flex; flex-wrap: wrap; justify-content: center; gap: 16rpx; padding: 0 40rpx; margin-top: -20rpx; }
+.qa-chip { background: #fff; border: 1rpx solid var(--border); border-radius: 32rpx; padding: 12rpx 28rpx; font-size: 24rpx; color: var(--text-secondary); }
+.qa-chip:active { background: var(--primary-light); color: var(--primary-dark); }
 .input-bar { display: flex; align-items: center; gap: 16rpx; padding: 16rpx 20rpx; background: #fff; padding-bottom: calc(16rpx + env(safe-area-inset-bottom)); box-shadow: 0 -2rpx 12rpx rgba(0,0,0,0.04); }
 .input-wrap { flex: 1; background: var(--bg-page); border-radius: 36rpx; padding: 12rpx 24rpx; }
 .msg-input { width: 100%; font-size: 28rpx; line-height: 1.4; }
@@ -140,8 +166,17 @@ const goOrder = () => {
 .order-bar { @include content-limit($content-max-chat); }
 .msg-list { @include content-limit($content-max-chat); }
 .input-bar { @include content-limit($content-max-chat); }
+.desk-chat-hint { @include content-limit($content-max-chat); }
+
+/* 桌面操作提示：窄屏一律隐藏，保持与小程序视觉一致 */
+.desk-chat-hint { display: none; }
 
 @media (min-width: $bp-tablet) {
+  /* 输入条上方的操作提示行（Enter 发送 / 轮询刷新 / 资料链接） */
+  .desk-chat-hint { display: block; flex-shrink: 0; padding: 6px 24px; font-size: 12px; color: var(--text-light); text-align: right; }
+
+  /* 快捷开场语在桌面呈按钮态 */
+  .qa-chip { padding: 8px 18px; font-size: 13px; }
   .order-bar { border-radius: 0 0 12px 12px; }
   .msg-list { padding: 24px; }
   /* 气泡最大宽度由固定 480rpx 放宽到列宽百分比（约 60%） */
@@ -151,6 +186,11 @@ const goOrder = () => {
   .input-wrap { padding: 10px 18px; border-radius: 20px; }
   /* 发送键在桌面呈按钮态（Enter 发送依赖 input 的 confirm-type="send"，逻辑不动） */
   .send-btn { background: var(--primary); color: #fff; border-radius: 18px; padding: 8px 22px; font-size: 14px; }
+}
+
+/* 桌面鼠标悬停反馈（触屏不受影响） */
+@media (hover: hover) and (pointer: fine) {
+  .qa-chip:hover { border-color: var(--primary); color: var(--primary); }
 }
 /* #endif */
 </style>

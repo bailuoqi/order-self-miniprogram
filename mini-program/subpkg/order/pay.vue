@@ -32,6 +32,16 @@
       <!-- 开发环境模拟支付（H5 宽屏加「演示环境」角标，见样式区 C6） -->
       <button class="btn-mock" :disabled="paying" @click="doMockPay">模拟支付成功（开发演示）<!-- #ifdef H5 --><text class="demo-badge">演示环境</text><!-- #endif --></button>
     </view>
+
+    <!-- #ifdef H5 -->
+    <!-- 桌面（≥768px）支付说明：窄屏隐藏与小程序保持一致 -->
+    <view class="desk-pay-help">
+      <text class="dph-title">支付说明</text>
+      <text class="dph-line">· {{ stage === 'deposit' ? '定金支付后团队即排期开工，制作进度可在订单详情查看' : '尾款在成果交付且确认无误后支付，付清后即可评价本单' }}</text>
+      <text class="dph-line">· 支付金额以双方确认的报价为准，总价 / 定金 / 尾款明细见上方金额卡</text>
+      <text class="dph-line">· 当前为电脑端演示环境，请使用「模拟支付」按钮走通流程，正式支付请在微信小程序内完成</text>
+    </view>
+    <!-- #endif -->
   </view>
 </template>
 
@@ -137,18 +147,27 @@ const doMockPay = async () => {
 /* #ifdef H5 */
 /* ==================== 桌面适配（任务 C6，仅 H5 编译，不进小程序包） ==================== */
 
-/* ≥768px：金额卡 + 支付方式卡 + 按钮区整体居中 560px（规划书 §4.9） */
+/* ≥768px：金额卡 + 支付方式卡 + 按钮区 + 支付说明整体居中 560px（规划书 §4.9） */
 .pay-amount,
 .pay-methods,
-.pay-submit {
+.pay-submit,
+.desk-pay-help {
   @include content-limit($content-max-pay);
 }
 
 /* 「演示环境」角标仅宽屏显示（窄屏 H5 维持现状按钮文案） */
 .demo-badge { display: none; }
 
+/* 桌面支付说明：窄屏一律隐藏，保持与小程序视觉一致 */
+.desk-pay-help { display: none; }
+
 @include screen-tablet-up {
   .pay-amount { padding: 60rpx 30rpx; }
+
+  /* 支付说明卡：交代定金/尾款机制与演示环境边界 */
+  .desk-pay-help { display: block; background: #fff; border-radius: var(--radius); padding: 18px 22px; margin-top: 4px; box-shadow: var(--shadow); }
+  .dph-title { display: block; font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 8px; }
+  .dph-line { display: block; font-size: 12px; color: var(--text-secondary); line-height: 1.8; }
 
   /* uni-button 默认 overflow:hidden，会把突出按钮上缘的角标裁掉，需放开 */
   .btn-mock { position: relative; overflow: visible; }
