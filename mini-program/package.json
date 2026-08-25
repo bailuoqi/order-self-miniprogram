@@ -1,13 +1,13 @@
 {
   "name": "task-platform",
   "version": "1.0.0",
-  "description": "自主接单平台微信小程序",
+  "description": "定制接单微信小程序（软件定制/电子代做）",
   "main": "main.js",
   "scripts": {
-    "dev:mp-weixin": "npx uni -p mp-weixin",
-    "build:mp-weixin": "npx uni build -p mp-weixin",
-    "dev:h5": "npx uni",
-    "build:h5": "npx uni build"
+    "dev:mp-weixin": "cross-env UNI_INPUT_DIR=./ uni -p mp-weixin",
+    "build:mp-weixin": "cross-env UNI_INPUT_DIR=./ uni build -p mp-weixin",
+    "dev:h5": "cross-env UNI_INPUT_DIR=./ uni",
+    "build:h5": "cross-env UNI_INPUT_DIR=./ uni build"
   },
   "dependencies": {
     "@dcloudio/uni-app": "3.0.0-4020920240930001",
@@ -22,7 +22,7 @@
     "vue-router": "^4.3.0"
   },
   "devDependencies": {
-    "@dcloudio/types": "3.4.8",
+    "@dcloudio/types": "3.4.32",
     "@dcloudio/uni-automator": "3.0.0-4020920240930001",
     "@dcloudio/uni-cli-shared": "3.0.0-4020920240930001",
     "@dcloudio/vite-plugin-uni": "3.0.0-4020920240930001",
@@ -30,3 +30,4 @@
     "vite": "5.2.8"
   }
 }
+

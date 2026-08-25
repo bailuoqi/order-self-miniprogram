@@ -40,19 +40,25 @@
         {
           "path": "product/list",
           "style": {
-            "navigationBarTitleText": "商品列表"
+            "navigationBarTitleText": "标准服务"
           }
         },
         {
           "path": "product/detail",
           "style": {
-            "navigationBarTitleText": "商品详情"
+            "navigationBarTitleText": "服务详情"
           }
         },
         {
           "path": "order/create",
           "style": {
-            "navigationBarTitleText": "确认下单"
+            "navigationBarTitleText": "提交需求"
+          }
+        },
+        {
+          "path": "order/create-custom",
+          "style": {
+            "navigationBarTitleText": "发布需求"
           }
         },
         {
@@ -64,37 +70,25 @@
         {
           "path": "order/pay",
           "style": {
-            "navigationBarTitleText": "支付订单"
+            "navigationBarTitleText": "支付"
           }
         },
         {
-          "path": "chat/session",
+          "path": "order/review",
           "style": {
-            "navigationBarTitleText": "消息"
+            "navigationBarTitleText": "评价"
           }
         },
         {
           "path": "chat/room",
           "style": {
-            "navigationBarTitleText": "聊天"
+            "navigationBarTitleText": "报价商议"
           }
         },
         {
-          "path": "employee/auth",
+          "path": "my/join-us",
           "style": {
-            "navigationBarTitleText": "员工认证"
-          }
-        },
-        {
-          "path": "employee/task-pool",
-          "style": {
-            "navigationBarTitleText": "任务池"
-          }
-        },
-        {
-          "path": "my/employee-center",
-          "style": {
-            "navigationBarTitleText": "接单中心"
+            "navigationBarTitleText": "加入我们"
           }
         },
         {
@@ -160,7 +154,7 @@
   },
   "globalStyle": {
     "navigationBarTextStyle": "white",
-    "navigationBarTitleText": "自主接单平台",
+    "navigationBarTitleText": "定制接单",
     "navigationBarBackgroundColor": "#2979FF",
     "backgroundColor": "#F5F6FA"
   }

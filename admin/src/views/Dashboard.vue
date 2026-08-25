@@ -1,15 +1,21 @@
 <template>
-<div><div class="page-hd"><h2>仪表盘</h2></div>
+<div><div class="page-hd"><h2>工作台</h2></div>
 <div class="stat-cards">
-  <div class="stat-card"><div class="stat-icon" style="background:#E3F2FD;color:#1565C0"><i class="ri-user-3-line"></i></div><div><div class="stat-val">{{stats.users}}</div><div class="stat-lbl">用户总数</div></div></div>
-  <div class="stat-card"><div class="stat-icon" style="background:#FFF3E0;color:#E65100"><i class="ri-file-list-3-line"></i></div><div><div class="stat-val">{{stats.orders}}</div><div class="stat-lbl">订单总数</div></div></div>
-  <div class="stat-card"><div class="stat-icon" style="background:#E8F5E9;color:#2E7D32"><i class="ri-money-cny-circle-line"></i></div><div><div class="stat-val">{{stats.revenue}}</div><div class="stat-lbl">平台收入(元)</div></div></div>
-  <div class="stat-card"><div class="stat-icon" style="background:#F3E5F5;color:#6A1B9A"><i class="ri-user-star-line"></i></div><div><div class="stat-val">{{stats.employees}}</div><div class="stat-lbl">认证员工</div></div></div>
+  <div class="stat-card" style="cursor:pointer" @click="go('pending_quote')"><div class="stat-icon" style="background:#FFF3E0;color:#E65100"><i class="ri-money-cny-circle-line"></i></div><div><div class="stat-val">{{stats.pending_quote + stats.quoting}}</div><div class="stat-lbl">待报价/商议中</div></div></div>
+  <div class="stat-card" style="cursor:pointer" @click="go('confirmed')"><div class="stat-icon" style="background:#E3F2FD;color:#1565C0"><i class="ri-wallet-3-line"></i></div><div><div class="stat-val">{{stats.awaiting_deposit}}</div><div class="stat-lbl">待收定金</div></div></div>
+  <div class="stat-card" style="cursor:pointer" @click="go('deposit_paid')"><div class="stat-icon" style="background:#E8F5E9;color:#2E7D32"><i class="ri-tools-line"></i></div><div><div class="stat-val">{{stats.in_production}}</div><div class="stat-lbl">制作中</div></div></div>
+  <div class="stat-card" style="cursor:pointer" @click="go('delivered')"><div class="stat-icon" style="background:#F3E5F5;color:#6A1B9A"><i class="ri-hand-coin-line"></i></div><div><div class="stat-val">{{stats.awaiting_final}}</div><div class="stat-lbl">待收尾款</div></div></div>
+</div>
+<div class="stat-cards" style="margin-top:0">
+  <div class="stat-card"><div class="stat-icon" style="background:#E3F2FD;color:#1565C0"><i class="ri-file-add-line"></i></div><div><div class="stat-val">{{stats.new_today}}</div><div class="stat-lbl">今日新订单</div></div></div>
+  <div class="stat-card"><div class="stat-icon" style="background:#E8F5E9;color:#2E7D32"><i class="ri-check-double-line"></i></div><div><div class="stat-val">{{stats.month_deal_count}}</div><div class="stat-lbl">本月成交单数</div></div></div>
+  <div class="stat-card"><div class="stat-icon" style="background:#FFF3E0;color:#E65100"><i class="ri-money-cny-box-line"></i></div><div><div class="stat-val">{{(stats.month_deal_amount/100).toFixed(0)}}</div><div class="stat-lbl">本月成交额(元)</div></div></div>
+  <div class="stat-card" style="cursor:pointer" @click="go('final_paid')"><div class="stat-icon" style="background:#F3E5F5;color:#6A1B9A"><i class="ri-star-smile-line"></i></div><div><div class="stat-val">{{stats.awaiting_review}}</div><div class="stat-lbl">待客户评价</div></div></div>
 </div>
 <div class="chart-row">
   <div class="card"><h3 style="margin-bottom:16px">最近订单</h3>
-    <table class="table"><thead><tr><th>单号</th><th>金额</th><th>状态</th></tr></thead>
-      <tbody><tr v-for="o in recentOrders" :key="o.id"><td>{{o.order_no?.slice(0,16)}}</td><td>{{(o.total_amount/100).toFixed(2)}}</td><td><span :class="'tag '+statusTag(o.status)">{{statusLabel(o.status)}}</span></td></tr></tbody>
+    <table class="table"><thead><tr><th>需求</th><th>报价(元)</th><th>状态</th></tr></thead>
+      <tbody><tr v-for="o in recentOrders" :key="o.id" style="cursor:pointer" @click="$router.push('/orders/'+o.id)"><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{o.title}}</td><td>{{o.quote_amount?(o.quote_amount/100).toFixed(2):'-'}}</td><td><span :class="'tag '+statusTag(o.status)">{{statusLabel(o.status)}}</span></td></tr></tbody>
     </table>
   </div>
   <div class="card"><h3 style="margin-bottom:16px">待退款</h3>
@@ -22,27 +28,25 @@
 </template>
 <script setup>
 import { ref, onMounted } from "vue"
+import { useRouter } from "vue-router"
 import api from "@/api"
-const stats = ref({users:0,orders:0,revenue:0,employees:0})
+import { ORDER_STATUS_MAP, ORDER_STATUS_TAG } from "@/utils/order-status"
+const router=useRouter()
+const stats = ref({new_today:0,pending_quote:0,quoting:0,awaiting_deposit:0,in_production:0,awaiting_final:0,awaiting_review:0,month_deal_count:0,month_deal_amount:0})
 const recentOrders = ref([])
 const pendingRefunds = ref([])
-const smap={pending:"待付款",paid:"已付款",accepted:"进行中",completed:"已完成",cancelled:"已取消",refunding:"退款中",refunded:"已退款"}
-const scl={pending:"tag-orange",paid:"tag-blue",accepted:"tag-blue",completed:"tag-green",refunding:"tag-orange",refunded:"tag-red"}
-const statusLabel=s=>smap[s]||s
-const statusTag=s=>scl[s]||""
+const statusLabel=s=>ORDER_STATUS_MAP[s]||s
+const statusTag=s=>ORDER_STATUS_TAG[s]||""
+const go=(status)=>router.push({path:'/orders',query:{status}})
 onMounted(async()=>{
   try{
-    const [usersRes, ordersRes, refsRes, empRes] = await Promise.all([
-      api.get("/users",{params:{pageSize:1}}),
-      api.get("/orders",{params:{pageSize:5}}),
+    const [statsRes, ordersRes, refsRes] = await Promise.all([
+      api.get("/orders/stats/dashboard"),
+      api.get("/orders",{params:{pageSize:6}}),
       api.get("/refunds"),
-      api.get("/employee/top")
     ])
-    stats.value.users = usersRes.total||0
-    stats.value.orders = ordersRes.total||0
-    stats.value.revenue = (ordersRes.list||[]).reduce((s,o)=>s+(o.commission||0),0)/100
-    stats.value.employees = (empRes||[]).length
-    recentOrders.value = (ordersRes.list||[]).slice(0,5)
+    stats.value={...stats.value,...statsRes}
+    recentOrders.value = (ordersRes.list||[]).slice(0,6)
     pendingRefunds.value = (refsRes||[]).filter(r=>r.status==="pending").slice(0,5)
   }catch(e){console.log(e)}
 })

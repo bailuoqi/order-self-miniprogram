@@ -45,6 +45,21 @@ export class AuthService {
     return { token, user: this.sanitizeUser(user) };
   }
 
+  /** 开发环境登录（H5 预览演示用），生产环境禁用 */
+  async devLogin(nickname?: string) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new UnauthorizedException('生产环境不允许开发登录');
+    }
+    const openid = 'dev_h5_user';
+    let user = await this.userRepo.findOne({ where: { openid } });
+    if (!user) {
+      user = this.userRepo.create({ openid, unionid: '', nickname: nickname || 'H5体验客户', avatar: '' });
+      await this.userRepo.save(user);
+    }
+    const token = this.generateToken(user);
+    return { token, user: this.sanitizeUser(user) };
+  }
+
   async adminLogin(username: string, password: string) {
     const admin = await this.adminRepo.findOne({ where: { username, status: 1 } });
     if (!admin || !bcrypt.compareSync(password, admin.password)) {

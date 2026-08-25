@@ -4,6 +4,8 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 export class Category {
   @PrimaryGeneratedColumn() id: number;
   @Column() name: string;
+  /** 业务大类：software=软件定制, electronics=电子代做 */
+  @Column({ default: 'software' }) group: string;
   @Column({ nullable: true }) icon: string;
   @Column({ default: 0 }) sort: number;
   @Column({ default: 1 }) status: number;

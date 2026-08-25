@@ -2,13 +2,18 @@
   <view class="page-about">
     <view class="logo-area card">
       <image class="logo" src="/static/icons/logo.png" mode="aspectFit" />
-      <text class="app-name">自主接单平台</text>
-      <text class="version">Version 1.0.0</text>
+      <text class="app-name">定制接单</text>
+      <text class="version">软件定制 · 电子代做</text>
     </view>
 
     <view class="info card">
-      <text class="info-title">平台介绍</text>
-      <text class="info-desc">自主接单平台是一个连接用户与服务提供者的通用任务平台。用户可以发布需求，经过认证的服务能手可以自主接单，高效完成各类服务任务。平台提供在线支付、实时沟通、评价体系等完整服务闭环。</text>
+      <text class="info-title">关于我们</text>
+      <text class="info-desc">我们是一个专注「软件定制开发」与「电子产品代做」的工作室团队。承接小程序/网站/脚本工具/接口对接/系统二次开发，以及 PCB 打样、焊接组装、单片机开发、电路设计、样机打样等合法合规的定制服务。下单后由团队统一评估报价，确认后支付定金开工，交付满意再结尾款。</text>
+    </view>
+
+    <view class="info card">
+      <text class="info-title">服务流程</text>
+      <text class="info-desc">客户下单 → 团队报价商议 → 确认报价 → 支付定金开工 → 交付成果 → 支付尾款 → 评价完成</text>
     </view>
 
     <view class="contact card">
@@ -18,7 +23,7 @@
       </view>
       <view class="contact-item">
         <text class="ci-label">客服邮箱</text>
-        <text class="ci-value">support@jiedan.com</text>
+        <text class="ci-value">support@dingzhi.work</text>
       </view>
       <view class="contact-item">
         <text class="ci-label">工作时间</text>
@@ -26,7 +31,7 @@
       </view>
     </view>
 
-    <text class="copyright">© 2026 自主接单平台 All Rights Reserved</text>
+    <text class="copyright">© 2026 定制接单工作室 All Rights Reserved</text>
   </view>
 </template>
 

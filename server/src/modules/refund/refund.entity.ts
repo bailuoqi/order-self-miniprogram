@@ -14,6 +14,8 @@ export class Refund {
   @Column() reason: string;
   @Column({ type: 'simple-json', nullable: true }) images: string[];
   @Column({ type: 'varchar', default: RefundStatus.PENDING }) status: RefundStatus;
+  /** 申请退款前订单所处状态，用于驳回时恢复 */
+  @Column({ nullable: true }) prev_order_status: string;
   @Column({ nullable: true }) admin_remark: string;
   @Column({ nullable: true }) admin_id: number;
   @Column({ nullable: true }) audited_at: Date;

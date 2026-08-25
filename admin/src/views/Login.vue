@@ -2,7 +2,7 @@
 <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#667eea,#764ba2)">
 <div class="card" style="width:400px;padding:40px">
   <h2 style="text-align:center;margin-bottom:30px;font-size:24px">
-    <i class="ri-admin-line" style="color:var(--primary)"></i> 管理后台
+    <i class="ri-code-box-line" style="color:var(--primary)"></i> 定制接单 · 团队后台
   </h2>
   <div class="form-group">
     <label class="form-label">用户名</label>
@@ -34,7 +34,7 @@ const doLogin = async () => {
   error.value = ''
   loading.value = true
   try { await store.login(username.value, password.value); router.push('/') }
-  catch (e) { error.value = e.message || '登录失败' }
+  catch (e) { error.value = e.errMsg || e.message || '登录失败' }
   finally { loading.value = false }
 }
 </script>

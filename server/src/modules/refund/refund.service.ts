@@ -23,20 +23,27 @@ export class RefundService {
     // 幂等检查：同一订单已有退款申请则拒绝
     const existing = await this.repo.findOne({ where: { order_id: orderId } });
     if (existing) throw new BadRequestException("该订单已提交退款申请，请勿重复申请");
-    
+
     const order = await this.orderRepo.findOne({ where: { id: orderId, user_id: userId } });
     if (!order) throw new NotFoundException("订单不存在");
-    if ([OrderStatus.COMPLETED, OrderStatus.REFUNDING, OrderStatus.REFUNDED].includes(order.status)) {
+    // 只有已付过钱的订单才需要退款（付定金后 / 已交付 / 已付尾款未评价）
+    const refundable = [OrderStatus.DEPOSIT_PAID, OrderStatus.DELIVERED, OrderStatus.FINAL_PAID];
+    if (!refundable.includes(order.status)) {
       throw new BadRequestException("订单状态不可申请退款");
     }
+
+    // 退款金额 = 已实际支付金额（定金 + 已付尾款）
+    let paidAmount = order.deposit_amount || 0;
+    if (order.final_paid_at) paidAmount += order.final_amount || 0;
 
     const refund = this.repo.create({
       refund_no: "RF" + Date.now() + uuid().slice(0, 6).toUpperCase(),
       order_id: orderId,
       user_id: userId,
-      amount: order.total_amount,
+      amount: paidAmount,
       reason,
       images: images || [],
+      prev_order_status: order.status,
     });
     await this.repo.save(refund);
 
@@ -84,7 +91,9 @@ export class RefundService {
     refund.audited_at = new Date();
     await this.repo.save(refund);
 
-    await this.orderRepo.update(refund.order_id, { status: OrderStatus.PAID });
+    // 恢复到申请退款前的状态
+    const prev = (refund.prev_order_status as OrderStatus) || OrderStatus.DEPOSIT_PAID;
+    await this.orderRepo.update(refund.order_id, { status: prev });
 
     return refund;
   }

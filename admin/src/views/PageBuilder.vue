@@ -362,7 +362,7 @@ const templates = [
       { type: 'search', props: { placeholder: '搜索服务', bgColor: '#fff', radius: 20 } },
       { type: 'banner', props: { images: [], height: 160, dots: true, radius: 8 } },
       { type: 'navGrid', props: { items: [{ icon: 'ri-service-line', name: '服务' }, { icon: 'ri-calendar-line', name: '预约' }, { icon: 'ri-star-line', name: '推荐' }, { icon: 'ri-more-line', name: '更多' }], columns: 4 } },
-      { type: 'notice', props: { text: '欢迎使用任务接单平台', ico: 'ri-volume-up-line', bgColor: '#fff7e6', color: '#fa8c16' } },
+      { type: 'notice', props: { text: '软件定制 / 电子代做，先报价后开工', ico: 'ri-volume-up-line', bgColor: '#fff7e6', color: '#fa8c16' } },
       { type: 'titleBar', props: { title: '热门服务', moreText: '更多' } },
       { type: 'goodsRow', props: { title: '精选服务', goods: [], layout: 'scroll', showBadge: true, columns: 2 } },
     ]

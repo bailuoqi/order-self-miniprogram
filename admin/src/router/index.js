@@ -18,7 +18,8 @@ const routes = [
       { path: 'products/edit/:id?', name: 'ProductEdit', component: () => import('@/views/ProductEdit.vue') },
       { path: 'orders', name: 'Orders', component: () => import('@/views/Orders.vue') },
       { path: 'orders/:id', name: 'OrderDetail', component: () => import('@/views/OrderDetail.vue') },
-      { path: 'employees', name: 'Employees', component: () => import('@/views/Employees.vue') },
+      { path: 'messages', name: 'Messages', component: () => import('@/views/Messages.vue') },
+      { path: 'recruits', name: 'Recruits', component: () => import('@/views/Recruits.vue') },
       { path: 'refunds', name: 'Refunds', component: () => import('@/views/Refunds.vue') },
       { path: 'users', name: 'Users', component: () => import('@/views/Users.vue') },
       { path: 'page-builder', name: 'PageBuilder', component: () => import('@/views/PageBuilder.vue') },
@@ -35,8 +36,8 @@ const router = createRouter({
   routes,
 })
 
-// 角色等级: super_admin > admin > editor
-const ROLE_LEVEL = { super_admin: 3, admin: 2, editor: 1 }
+// 角色等级需覆盖后端 AdminRole: super / admin / sales / maker / finance / editor
+const ROLE_LEVEL = { super: 4, super_admin: 4, admin: 3, finance: 2, sales: 1, maker: 1, editor: 1 }
 
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('admin_token')

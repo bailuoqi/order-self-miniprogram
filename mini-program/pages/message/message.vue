@@ -1,19 +1,22 @@
 <template>
   <view class="page-message">
     <view class="msg-item" v-for="s in sessions" :key="s.id" @click="goRoom(s)">
-      <view class="msg-ri-wrap" :style="{ background: s.iconBg }">
-        <view :class="'ri-' + s.icon" style="font-size:36rpx;" />
+      <view class="msg-ri-wrap">
+        <i class="ri-customer-service-2-line" style="font-size:36rpx;color:#fff;" />
       </view>
       <view class="msg-info">
         <view class="msg-top">
-          <text class="msg-title">{{ s.title }}</text>
-          <text class="msg-time">{{ s.time }}</text>
+          <text class="msg-title">{{ s.order?.title || '订单沟通' }}</text>
+          <text class="msg-time">{{ fmtTime(s.last_message_at) }}</text>
         </view>
-        <text class="msg-desc text-ellipsis">{{ s.desc }}</text>
+        <text class="msg-desc text-ellipsis">{{ s.last_message || '暂无消息' }}</text>
       </view>
-      <view class="msg-dot" v-if="!s.read" />
+      <view class="msg-badge" v-if="s.user_unread">{{ s.user_unread }}</view>
     </view>
-    <view v-if="!sessions.length" class="empty">暂无消息</view>
+    <view v-if="!sessions.length" class="empty">
+      <text>暂无消息</text>
+      <text class="empty-sub">下单后可在订单详情中「联系团队」商议报价</text>
+    </view>
   </view>
 </template>
 
@@ -31,19 +34,13 @@ onShow(async () => {
   if (!authStore.isLogin) return;
   try {
     await chatStore.fetchSessions();
-    sessions.value = (chatStore.sessions || []).map(s => ({
-      ...s,
-      displayName: s.last_message || '暂无消息',
-      lastMsg: s.last_message || '',
-      time: s.last_message_at || '',
-      unread: s.user_unread || 0,
-    }));
+    sessions.value = chatStore.sessions || [];
   } catch (e) { console.log(e); }
 });
 
+const fmtTime = (d) => (d ? String(d).replace('T', ' ').slice(5, 16) : '');
 const goRoom = (s) => {
-  const targetId = s.target_id === authStore.userInfo?.id ? s.user_id : s.target_id;
-  uni.navigateTo({ url: '/subpkg/chat/room?sessionId=' + s.id + '&targetId=' + targetId });
+  uni.navigateTo({ url: '/subpkg/chat/room?sessionId=' + s.id + '&orderId=' + (s.order_id || '') });
 };
 </script>
 
@@ -51,12 +48,13 @@ const goRoom = (s) => {
 .page-message { min-height: 100vh; background: #fff; }
 .msg-item { display: flex; align-items: center; gap: 20rpx; padding: 24rpx 30rpx; border-bottom: 1rpx solid var(--border); }
 .msg-item:active { background: #f8f8f8; }
-.msg-ri-wrap { width: 80rpx; height: 80rpx; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.msg-ri-wrap { width: 80rpx; height: 80rpx; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: linear-gradient(135deg, #2979FF, #1565C0); }
 .msg-info { flex: 1; overflow: hidden; }
-.msg-top { display: flex; justify-content: space-between; align-items: center; }
-.msg-title { font-size: 28rpx; font-weight: 600; }
-.msg-time { font-size: 22rpx; color: var(--text-light); }
+.msg-top { display: flex; justify-content: space-between; align-items: center; gap: 16rpx; }
+.msg-title { font-size: 28rpx; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.msg-time { font-size: 22rpx; color: var(--text-light); flex-shrink: 0; }
 .msg-desc { font-size: 24rpx; color: var(--text-light); margin-top: 6rpx; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
-.msg-dot { width: 14rpx; height: 14rpx; background: var(--danger); border-radius: 50%; flex-shrink: 0; }
-.empty { text-align: center; padding: 100rpx; color: var(--text-light); }
+.msg-badge { min-width: 32rpx; height: 32rpx; line-height: 32rpx; text-align: center; background: var(--danger); color: #fff; font-size: 20rpx; border-radius: 16rpx; padding: 0 8rpx; flex-shrink: 0; }
+.empty { text-align: center; padding: 120rpx 40rpx; color: var(--text-light); display: flex; flex-direction: column; gap: 12rpx; }
+.empty-sub { font-size: 22rpx; color: #ccc; }
 </style>

@@ -20,6 +20,16 @@ export const useAuthStore = defineStore("auth", {
       return res;
     },
 
+    /** 开发环境登录（H5 预览用） */
+    async devLogin(nickname) {
+      const res = await api.post("/auth/dev-login", { nickname });
+      this.token = res.token;
+      this.userInfo = res.user;
+      uni.setStorageSync("token", res.token);
+      uni.setStorageSync("userInfo", JSON.stringify(res.user));
+      return res;
+    },
+
     /** 更新用户信息 */
     async updateProfile(data) {
       const res = await api.put("/user/profile", data);

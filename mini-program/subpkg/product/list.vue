@@ -17,19 +17,16 @@
         <view class="p-info">
           <text class="p-name text-ellipsis-2">{{ p.title }}</text>
           <view class="p-meta">
-            <view class="p-rating">
-              <text class="star">⭐</text>
-              <text>{{ p.rating }}</text>
-            </view>
-            <text class="p-sold">已售{{ p.soldCount }}</text>
+            <text class="p-sold" v-if="p.delivery_days">工期 {{ p.delivery_days }}</text>
+            <text class="p-sold">已成交{{ p.sold_count || 0 }}单</text>
           </view>
           <view class="p-footer">
             <view class="p-price">
               <text class="symbol">¥</text>
-              <text class="value">{{ p.price }}</text>
-              <text class="unit">/次</text>
+              <text class="value">{{ fmtPrice(p.price) }}</text>
+              <text class="unit">起</text>
             </view>
-            <view class="btn-buy">立即下单</view>
+            <view class="btn-buy">需求报价</view>
           </view>
         </view>
       </view>
@@ -89,7 +86,10 @@ const loadProducts = async () => {
   }
 };
 
-const fmtPrice = (fen) => (fen / 100).toFixed(0);
+const fmtPrice = (fen) => {
+  const yuan = (fen || 0) / 100;
+  return yuan % 1 === 0 ? String(yuan) : yuan.toFixed(2);
+};
 
 const goDetail = (p) => uni.navigateTo({ url: '/subpkg/product/detail?id=' + p.id });
 </script>

@@ -15,11 +15,24 @@ const tryAutoLogin = async () => {
   const token = uni.getStorageSync("token");
   if (token) return; // 已登录
 
+  const authStore = useAuthStore();
+
+  // #ifdef H5
+  // H5 预览环境：使用开发登录（后端生产环境禁用该接口）
+  try {
+    await authStore.devLogin();
+    console.log("H5 开发登录成功");
+  } catch (e) {
+    console.log("H5 开发登录失败:", e);
+  }
+  return;
+  // #endif
+
+  // #ifndef H5
   try {
     // 微信小程序环境：调用 uni.login 获取 code
     const loginRes = await uni.login({ provider: "weixin" });
     if (loginRes.code) {
-      const authStore = useAuthStore();
       await authStore.wxLogin(loginRes.code);
       console.log("自动登录成功");
     }
@@ -27,6 +40,7 @@ const tryAutoLogin = async () => {
     console.log("自动登录失败，可手动触发:", e);
     // 开发环境：静默失败，允许未登录浏览
   }
+  // #endif
 };
 </script>
 

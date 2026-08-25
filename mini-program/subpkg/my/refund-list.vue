@@ -2,16 +2,15 @@
   <view class="page-refund">
     <view class="refund-item card" v-for="r in refunds" :key="r.id" @click="goDetail(r)">
       <view class="ri-header">
-        <text class="ri-order">订单：{{ r.orderNo }}</text>
-        <text class="ri-status" :style="{ color: statusColor(r.status) }">{{ r.statusText }}</text>
+        <text class="ri-order">退款单：{{ r.refund_no }}</text>
+        <text class="ri-status" :style="{ color: statusColor(r.status) }">{{ statusMap[r.status] || r.status }}</text>
       </view>
       <view class="ri-body">
-        <image class="ri-img" :src="r.cover" mode="aspectFill" />
         <view class="ri-info">
-          <text class="ri-name">{{ r.title }}</text>
+          <text class="ri-name">{{ r.order?.title || '订单 #' + r.order_id }}</text>
           <text class="ri-reason">退款原因：{{ r.reason }}</text>
         </view>
-        <text class="ri-amount">¥{{ r.amount }}</text>
+        <text class="ri-amount">¥{{ fmtPrice(r.amount) }}</text>
       </view>
     </view>
     <view v-if="!refunds.length" class="empty">暂无退款记录</view>
@@ -19,7 +18,8 @@
 </template>
 
 <script setup>
-const goDetail = (refund) => uni.navigateTo({ url: "/subpkg/order/detail?id=" + (refund?.orderId || "") });
+const goDetail = (refund) => uni.navigateTo({ url: "/subpkg/order/detail?id=" + (refund?.order_id || "") });
+const statusColor = (s) => ({ pending: "#FF9100", approved: "#00C853", rejected: "#FF3D00", completed: "#00C853" }[s] || "#999");
 import { ref } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import { api } from '@/api/request.js';

@@ -4,22 +4,26 @@ import { Repository } from "typeorm";
 import { PageConfig } from "./page-config.entity";
 
 const DEFAULT_CONFIGS = {
+  brand: {
+    name: "定制接单",
+    slogan: "软件定制 · 电子代做，先报价后开工",
+  },
   home: {
     banner: { enabled: true, slides: [
-      { image: "", title: "欢迎使用{CLIENT_NAME}", link: "" },
-      { image: "", title: "海量任务等你来接", link: "" }
+      { image: "", title: "软件定制开发 · 先报价后开工", link: "" },
+      { image: "", title: "电子产品代做 · 打样焊接一条龙", link: "" }
     ] },
     quickActions: [
-      { icon: "ri-file-list-3-line", name: "全部服务", link: "/subpkg/category/index", color: "#1565C0", bg: "#E3F2FD" },
-      { icon: "ri-fire-line", name: "热门推荐", link: "/subpkg/product/list?type=hot", color: "#E65100", bg: "#FFF3E0" },
-      { icon: "ri-user-star-line", name: "优秀接单者", link: "/subpkg/employee/task-pool", color: "#2E7D32", bg: "#E8F5E9" },
-      { icon: "ri-vip-crown-line", name: "会员中心", link: "/pages/my/index", color: "#6A1B9A", bg: "#F3E5F5" }
+      { icon: "ri-edit-box-line", name: "发布需求", link: "/subpkg/order/create-custom", color: "#1565C0", bg: "#E3F2FD" },
+      { icon: "ri-file-list-3-line", name: "标准服务", link: "/subpkg/category/index", color: "#E65100", bg: "#FFF3E0" },
+      { icon: "ri-team-line", name: "加入我们", link: "/subpkg/my/join-us", color: "#2E7D32", bg: "#E8F5E9" },
+      { icon: "ri-customer-service-2-line", name: "联系客服", link: "/subpkg/my/about", color: "#6A1B9A", bg: "#F3E5F5" }
     ],
-    notice: { enabled: true, text: "平台担保交易，资金安全有保障！认证接单者保证金制度已上线", link: "" },
+    notice: { enabled: true, text: "下单后团队报价，确认后付定金开工，交付满意再结尾款", link: "" },
     sections: [
-      { type: "categories", title: "服务分类", enabled: true, showCount: 8 },
-      { type: "products", title: "热门服务", enabled: true, tag: "hot", showCount: 4 },
-      { type: "employees", title: "推荐接单者", enabled: true, showCount: 4 }
+      { type: "categories", title: "服务分类", enabled: true, showCount: 10 },
+      { type: "products", title: "热门标准服务", enabled: true, tag: "hot", showCount: 4 },
+      { type: "reviews", title: "客户评价", enabled: true, showCount: 3 }
     ]
   },
   category: {
@@ -27,7 +31,7 @@ const DEFAULT_CONFIGS = {
   },
   my: {
     menuItems: [
-      { icon: "ri-user-star-line", name: "接单中心", link: "/subpkg/my/employee-center", auth: "employee" },
+      { icon: "ri-team-line", name: "加入我们", link: "/subpkg/my/join-us" },
       { icon: "ri-bill-line", name: "退款记录", link: "/subpkg/my/refund-list" },
       { icon: "ri-settings-3-line", name: "设置", link: "/subpkg/my/settings" },
       { icon: "ri-information-line", name: "关于我们", link: "/subpkg/my/about" }

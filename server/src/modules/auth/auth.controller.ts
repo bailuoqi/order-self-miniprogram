@@ -17,6 +17,12 @@ export class AuthController {
     return this.authService.adminLogin(body.username, body.password);
   }
 
+  /** 开发环境登录（H5 预览用，生产环境禁用） */
+  @Post('dev-login')
+  async devLogin(@Body() body: { nickname?: string }) {
+    return this.authService.devLogin(body?.nickname);
+  }
+
   /** 微信一键获取手机号 */
   @Post('wx-phone')
   async wxGetPhone(@Body() body: { code: string }) {

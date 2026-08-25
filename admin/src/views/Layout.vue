@@ -2,23 +2,24 @@
 <div style="display:flex;min-height:100vh">
   <aside style="width:230px;background:#1A1A2E;color:#fff;flex-shrink:0;display:flex;flex-direction:column">
     <div style="padding:20px;font-size:17px;font-weight:700;border-bottom:1px solid rgba(255,255,255,.08)">
-      <i class="ri-service-line" style="color:var(--primary)"></i> {CLIENT_NAME}
+      <i class="ri-code-box-line" style="color:var(--primary)"></i> 定制接单 · 团队后台
     </div>
     <nav style="flex:1;padding:12px 0;overflow-y:auto">
-      <router-link to="/dashboard" class="nav-item" active-class="nav-active"><i class="ri-dashboard-line"></i> 仪表盘</router-link>
-      <div class="nav-group">内容管理</div>
+      <router-link to="/dashboard" class="nav-item" active-class="nav-active"><i class="ri-dashboard-line"></i> 工作台</router-link>
+      <div class="nav-group">接单</div>
+      <router-link to="/orders" class="nav-item" active-class="nav-active"><i class="ri-file-list-3-line"></i> 订单中心</router-link>
+      <router-link to="/messages" class="nav-item" active-class="nav-active"><i class="ri-chat-3-line"></i> 消息中心</router-link>
+      <router-link to="/refunds" class="nav-item" active-class="nav-active"><i class="ri-refund-2-line"></i> 退款处理</router-link>
+      <div class="nav-group">服务与内容</div>
       <router-link to="/categories" class="nav-item" active-class="nav-active"><i class="ri-price-tag-3-line"></i> 服务分类</router-link>
-      <router-link to="/products" class="nav-item" active-class="nav-active"><i class="ri-shopping-bag-3-line"></i> 商品管理</router-link>
+      <router-link to="/products" class="nav-item" active-class="nav-active"><i class="ri-shopping-bag-3-line"></i> 标准服务</router-link>
       <router-link to="/page-builder" class="nav-item" active-class="nav-active"><i class="ri-layout-masonry-line"></i> 页面装修</router-link>
-      <router-link to="/cms" class="nav-item" active-class="nav-active"><i class="ri-article-line"></i> CMS内容</router-link>
-      <div class="nav-group">交易管理</div>
-      <router-link to="/orders" class="nav-item" active-class="nav-active"><i class="ri-file-list-3-line"></i> 订单管理</router-link>
-      <router-link to="/refunds" class="nav-item" active-class="nav-active"><i class="ri-refund-2-line"></i> 退款审核</router-link>
-      <div class="nav-group">用户管理</div>
-      <router-link to="/users" class="nav-item" active-class="nav-active"><i class="ri-user-3-line"></i> 用户管理</router-link>
-      <router-link to="/employees" class="nav-item" active-class="nav-active"><i class="ri-user-star-line"></i> 员工审核</router-link>
-      <div class="nav-group">系统设置</div>
-      <router-link to="/admins" class="nav-item" active-class="nav-active"><i class="ri-shield-user-line"></i> 管理员</router-link>
+      <router-link to="/cms" class="nav-item" active-class="nav-active"><i class="ri-article-line"></i> 公告内容</router-link>
+      <div class="nav-group">团队</div>
+      <router-link to="/users" class="nav-item" active-class="nav-active"><i class="ri-user-3-line"></i> 客户管理</router-link>
+      <router-link to="/recruits" class="nav-item" active-class="nav-active"><i class="ri-user-add-line"></i> 纳新申请</router-link>
+      <router-link to="/admins" class="nav-item" active-class="nav-active"><i class="ri-shield-user-line"></i> 团队成员</router-link>
+      <div class="nav-group">系统</div>
       <router-link to="/settings" class="nav-item" active-class="nav-active"><i class="ri-settings-3-line"></i> 系统配置</router-link>
     </nav>
     <div style="padding:16px;border-top:1px solid rgba(255,255,255,.08);cursor:pointer" @click="doLogout">

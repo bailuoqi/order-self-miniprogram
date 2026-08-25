@@ -19,7 +19,15 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   app.enableCors({
-    origin: ['http://localhost:8080', 'http://localhost:3000', 'http://localhost:5173'],
+    origin: [
+      'http://localhost:8080',
+      'http://127.0.0.1:8080',
+      'http://localhost:8081',
+      'http://127.0.0.1:8081',
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+    ],
     credentials: true,
   });
 
@@ -42,8 +50,8 @@ async function bootstrap() {
 
   // Swagger 接口文档
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('自主接单平台 API')
-    .setDescription('小程序 + 管理后台 接口文档')
+    .setTitle('定制接单 API')
+    .setDescription('软件定制 / 电子代做 团队接单系统：小程序 + 管理后台 接口文档')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
@@ -51,11 +59,15 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   const port = process.env.PORT || 3000;
+  const http = app.getHttpAdapter();
+  http.get('/', (_req: unknown, res: { redirect: (url: string) => void }) => {
+    res.redirect('/api/docs');
+  });
   await app.listen(port);
   console.log('========================================');
-  console.log('  自主接单平台后端服务');
+  console.log('  定制接单 · 团队接单系统后端服务');
   console.log('  http://localhost:' + port);
-  console.log('  API: http://localhost:' + port + '/api');
+  console.log('  API文档: http://localhost:' + port + '/api/docs');
   console.log('========================================');
 }
 bootstrap();

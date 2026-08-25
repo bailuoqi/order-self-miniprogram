@@ -9,15 +9,20 @@
           <image class="uc-avatar" src="/static/icons/default-avatar.png" mode="aspectFill" />
           <view class="uc-info">
             <text class="uc-name">点击登录</text>
-            <text class="uc-desc">登录解锁更多功能</text>
+            <text class="uc-desc">登录后可下单和查看进度</text>
           </view>
+          <!-- #ifndef H5 -->
           <button class="phone-login-btn" open-type="getPhoneNumber" @getphonenumber="onGetPhone">
             微信一键登录
           </button>
+          <!-- #endif -->
+          <!-- #ifdef H5 -->
+          <button class="phone-login-btn" @click="h5Login">体验登录</button>
+          <!-- #endif -->
         </view>
         <!-- 已登录 -->
         <view class="user-card" v-else @click="goEditProfile">
-          <image class="uc-avatar" :src="userInfo.avatar" mode="aspectFill" />
+          <image class="uc-avatar" :src="userInfo.avatar || '/static/icons/default-avatar.png'" mode="aspectFill" />
           <view class="uc-info">
             <text class="uc-name">{{ userInfo.nickname }}</text>
             <text class="uc-desc">{{ userInfo.phone || '未绑定手机号' }}</text>
@@ -27,39 +32,27 @@
           </view>
         </view>
 
-        <!-- 数据统计 -->
+        <!-- 订单统计 -->
         <view class="header-stats" v-if="isLogin">
-          <view class="stat-item">
-            <text class="stat-num">8</text>
+          <view class="stat-item" @click="goOrders('pending_quote,quoting')">
+            <text class="stat-num">{{ stats.quoting }}</text>
+            <text class="stat-label">待报价</text>
+          </view>
+          <view class="stat-divider" />
+          <view class="stat-item" @click="goOrders('confirmed,delivered')">
+            <text class="stat-num">{{ stats.toPay }}</text>
+            <text class="stat-label">待付款</text>
+          </view>
+          <view class="stat-divider" />
+          <view class="stat-item" @click="goOrders('deposit_paid')">
+            <text class="stat-num">{{ stats.making }}</text>
+            <text class="stat-label">制作中</text>
+          </view>
+          <view class="stat-divider" />
+          <view class="stat-item" @click="goOrders('')">
+            <text class="stat-num">{{ stats.total }}</text>
             <text class="stat-label">全部订单</text>
           </view>
-          <view class="stat-divider" />
-          <view class="stat-item">
-            <text class="stat-num">2</text>
-            <text class="stat-label">待接单</text>
-          </view>
-          <view class="stat-divider" />
-          <view class="stat-item">
-            <text class="stat-num">3</text>
-            <text class="stat-label">进行中</text>
-          </view>
-          <view class="stat-divider" />
-          <view class="stat-item">
-            <text class="stat-num">3</text>
-            <text class="stat-label">已完成</text>
-          </view>
-        </view>
-      </view>
-
-      <!-- 角色切换 -->
-      <view class="role-switch" v-if="isLogin">
-        <view class="role-tab" :class="{ active: userInfo.role === 'user' }" @click="switchRole('user')">
-          <i :class="userInfo.role === 'user' ? 'ri-user-3-fill' : 'ri-user-3-line'" style="font-size:32rpx;margin-right:8rpx;" />
-          <text>我是用户</text>
-        </view>
-        <view class="role-tab" :class="{ active: userInfo.role === 'employee' }" @click="switchRole('employee')">
-          <i :class="userInfo.role === 'employee' ? 'ri-briefcase-4-fill' : 'ri-briefcase-4-line'" style="font-size:32rpx;margin-right:8rpx;" />
-          <text>接单赚钱</text>
         </view>
       </view>
     </view>
@@ -68,21 +61,21 @@
     <view class="section">
       <view class="section-title">服务</view>
       <view class="menu-grid">
-        <view class="menu-item" @click="goPage('/subpkg/order/create')">
+        <view class="menu-item" @click="goPage('/subpkg/order/create-custom')">
           <i class="ri-add-circle-line menu-icon" style="color:#2979FF;" />
           <text class="menu-text">发布需求</text>
         </view>
-        <view class="menu-item" @click="goPage('/subpkg/employee/task-pool')">
-          <i class="ri-task-line menu-icon" style="color:#FF6D00;" />
-          <text class="menu-text">任务池</text>
+        <view class="menu-item" @click="goCategory">
+          <i class="ri-file-list-3-line menu-icon" style="color:#FF6D00;" />
+          <text class="menu-text">标准服务</text>
         </view>
-        <view class="menu-item" @click="goPage('/subpkg/employee/auth')">
-          <i class="ri-shield-check-line menu-icon" style="color:#00C853;" />
-          <text class="menu-text">员工认证</text>
+        <view class="menu-item" @click="goPage('/subpkg/my/join-us')">
+          <i class="ri-team-line menu-icon" style="color:#00C853;" />
+          <text class="menu-text">加入我们</text>
         </view>
-        <view class="menu-item" @click="goPage('/subpkg/my/employee-center')">
-          <i class="ri-briefcase-4-line menu-icon" style="color:#AA00FF;" />
-          <text class="menu-text">接单中心</text>
+        <view class="menu-item" @click="goAbout">
+          <i class="ri-customer-service-2-line menu-icon" style="color:#AA00FF;" />
+          <text class="menu-text">联系客服</text>
         </view>
       </view>
     </view>
@@ -98,7 +91,7 @@
           <text>设置</text>
           <i class="ri-arrow-right-s-line" />
         </view>
-        <view class="menu-row" @click="goPage('/subpkg/my/about')">
+        <view class="menu-row" @click="goAbout">
           <text>关于我们</text>
           <i class="ri-arrow-right-s-line" />
         </view>
@@ -108,21 +101,29 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import { useAuthStore } from '@/store/auth.js';
-import { useOrderStore } from '@/store/order.js';
+import { api } from '@/api/request.js';
 
 const authStore = useAuthStore();
-const orderStore = useOrderStore();
 const userInfo = ref({});
 const statusBarHeight = ref(44);
+const stats = ref({ quoting: 0, toPay: 0, making: 0, total: 0 });
+const isLogin = computed(() => authStore.isLogin);
 
 onShow(async () => {
-  userInfo.value = authStore.userInfo;
+  userInfo.value = authStore.userInfo || {};
   if (authStore.isLogin) {
     try {
-      const res = await orderStore.fetchMyOrders();
+      const res = await api.get('/orders/my', { page: 1, pageSize: 100 });
+      const list = res.list || [];
+      stats.value = {
+        total: res.total || list.length,
+        quoting: list.filter(o => ['pending_quote', 'quoting'].includes(o.status)).length,
+        toPay: list.filter(o => ['confirmed', 'delivered'].includes(o.status)).length,
+        making: list.filter(o => o.status === 'deposit_paid').length,
+      };
     } catch (e) { console.log(e); }
   }
   uni.getSystemInfo({ success: s => statusBarHeight.value = s.statusBarHeight || 44 });
@@ -140,7 +141,7 @@ const onGetPhone = async (e) => {
     });
     const phone = phoneRes.data.phone;
 
-    // 2. 微信登录（getUserInfo已废弃，使用wx.login获取openid）
+    // 2. 微信登录
     const loginRes = await uni.login();
     await authStore.wxLogin(loginRes.code, '', '');
 
@@ -153,6 +154,17 @@ const onGetPhone = async (e) => {
   }
 };
 
+/** H5 体验登录（开发环境） */
+const h5Login = async () => {
+  try {
+    await authStore.devLogin();
+    userInfo.value = authStore.userInfo;
+    uni.showToast({ title: '登录成功', icon: 'success' });
+  } catch (e) {
+    uni.showToast({ title: '登录失败', icon: 'none' });
+  }
+};
+
 const goPage = (url) => {
   if (!authStore.isLogin) {
     uni.showToast({ title: '请先登录', icon: 'none' });
@@ -161,14 +173,16 @@ const goPage = (url) => {
   uni.navigateTo({ url });
 };
 
+const goOrders = () => uni.switchTab({ url: '/pages/order/list' });
+const goCategory = () => uni.navigateTo({ url: '/subpkg/category/index' });
+const goAbout = () => uni.navigateTo({ url: '/subpkg/my/about' });
 const goEditProfile = () => uni.navigateTo({ url: '/subpkg/my/settings' });
-const switchRole = (role) => uni.showToast({ title: '切换为' + (role === 'employee' ? '接单模式' : '用户模式'), icon: 'none' });
 </script>
 
 <style lang="scss" scoped>
 .page-my { min-height: 100vh; background: var(--bg); padding-bottom: 120rpx; }
-.header { position: relative; overflow: hidden; }
-.header-bg { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 0 0 50% 50%; transform: scaleX(1.5); }
+.header { position: relative; overflow: hidden; padding-bottom: 30rpx; }
+.header-bg { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: linear-gradient(135deg, #2979FF 0%, #1565C0 100%); border-radius: 0 0 50% 50%; transform: scaleX(1.5); }
 .header-content { position: relative; z-index: 1; padding: 0 32rpx 40rpx; }
 .user-card { display: flex; align-items: center; gap: 20rpx; }
 .uc-avatar { width: 120rpx; height: 120rpx; border-radius: 50%; border: 4rpx solid rgba(255,255,255,.3); background: #eee; }
@@ -183,10 +197,6 @@ const switchRole = (role) => uni.showToast({ title: '切换为' + (role === 'emp
 .stat-num { font-size: 40rpx; font-weight: 700; color: #fff; display: block; }
 .stat-label { font-size: 22rpx; color: rgba(255,255,255,.7); margin-top: 6rpx; display: block; }
 .stat-divider { width: 1rpx; background: rgba(255,255,255,.2); }
-
-.role-switch { display: flex; margin: -20rpx 32rpx 20rpx; background: #fff; border-radius: 16rpx; padding: 12rpx; box-shadow: 0 4rpx 20rpx rgba(0,0,0,.08); position: relative; z-index: 2; }
-.role-tab { flex: 1; text-align: center; padding: 20rpx; border-radius: 12rpx; font-size: 28rpx; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; }
-.role-tab.active { background: rgba(41,121,255,.08); color: #2979FF; font-weight: 600; }
 
 .section { margin: 24rpx 32rpx; }
 .section-title { font-size: 28rpx; font-weight: 700; color: var(--text-main); margin-bottom: 16rpx; }

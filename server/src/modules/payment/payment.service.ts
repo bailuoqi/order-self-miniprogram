@@ -3,8 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import axios from 'axios';
 import { v4 as uuid } from 'uuid';
-import { Transaction, TransactionType, TransactionStatus } from './transaction.entity';
+import { Transaction, TransactionType, TransactionStatus, PaymentStage } from './transaction.entity';
 import { Order, OrderStatus } from '../order/order.entity';
+import { OrderService } from '../order/order.service';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -12,23 +13,50 @@ export class PaymentService {
   constructor(
     @InjectRepository(Transaction) private txRepo: Repository<Transaction>,
     @InjectRepository(Order) private orderRepo: Repository<Order>,
+    private orderService: OrderService,
     @Inject('APP_CONFIG') private config: any,
   ) {}
 
-  /** 微信小程序支付 - 统一下单 */
-  async wxPayOrder(userId: number, orderId: number, openid: string) {
+  /** 校验订单当前可支付的阶段与金额 */
+  private async resolvePayable(userId: number, orderId: number, stage: PaymentStage) {
     const order = await this.orderRepo.findOne({ where: { id: orderId, user_id: userId } });
     if (!order) throw new BadRequestException('订单不存在');
-    if (order.status !== OrderStatus.PENDING) throw new BadRequestException('订单状态不可支付');
+    if (stage === PaymentStage.DEPOSIT) {
+      if (order.status !== OrderStatus.CONFIRMED) throw new BadRequestException('订单当前不可支付定金');
+      if (!order.deposit_amount || order.deposit_amount <= 0) throw new BadRequestException('定金金额未设置');
+      return { order, amount: order.deposit_amount };
+    }
+    if (order.status !== OrderStatus.DELIVERED) throw new BadRequestException('订单当前不可支付尾款');
+    if (order.final_amount <= 0) throw new BadRequestException('该订单无需支付尾款');
+    return { order, amount: order.final_amount };
+  }
+
+  /** 微信小程序支付 - 统一下单（定金/尾款） */
+  async wxPayOrder(userId: number, orderId: number, stage: PaymentStage, openid: string) {
+    const { order, amount } = await this.resolvePayable(userId, orderId, stage);
+
+    // 创建交易记录（out_trade_no 用交易号，保证定金/尾款两笔独立）
+    const tx = this.txRepo.create({
+      transaction_no: this.generateTxNo(),
+      user_id: userId,
+      order_id: order.id,
+      type: TransactionType.PAY,
+      stage,
+      amount,
+      status: TransactionStatus.PENDING,
+      pay_method: 'wechat',
+    });
+    await this.txRepo.save(tx);
 
     const wxConfig = this.config.wx;
+    const stageText = stage === PaymentStage.DEPOSIT ? '定金' : '尾款';
     const params = {
       appid: wxConfig.appId,
       mch_id: wxConfig.mchId,
       nonce_str: this.randomStr(32),
-      body: `订单-${order.order_no}`,
-      out_trade_no: order.order_no,
-      total_fee: order.total_amount, // 分
+      body: `${stageText}-${order.order_no}`,
+      out_trade_no: tx.transaction_no,
+      total_fee: amount, // 分
       spbill_create_ip: '127.0.0.1',
       notify_url: wxConfig.notifyUrl,
       trade_type: 'JSAPI',
@@ -59,18 +87,6 @@ export class PaymentService {
       };
       payParams['paySign'] = this.wxSign(payParams, wxConfig.payKey);
 
-      // 创建交易记录
-      const tx = this.txRepo.create({
-        transaction_no: this.generateTxNo(),
-        user_id: userId,
-        order_id: order.id,
-        type: TransactionType.PAY,
-        amount: order.total_amount,
-        status: TransactionStatus.PENDING,
-        pay_method: 'wechat',
-      });
-      await this.txRepo.save(tx);
-
       return { payParams, transaction_no: tx.transaction_no };
     } catch (err) {
       throw new BadRequestException('支付请求失败: ' + err.message);
@@ -91,53 +107,58 @@ export class PaymentService {
     }
 
     if (result.return_code === 'SUCCESS' && result.result_code === 'SUCCESS') {
-      const orderNo = result.out_trade_no;
-      const order = await this.orderRepo.findOne({ where: { order_no: orderNo } });
-      if (!order) return this.toXml({ return_code: 'FAIL', return_msg: '订单不存在' });
+      const txNo = result.out_trade_no;
+      const tx = await this.txRepo.findOne({ where: { transaction_no: txNo } });
+      if (!tx) return this.toXml({ return_code: 'FAIL', return_msg: '交易不存在' });
 
-      // 幂等：已支付则直接返回成功
-      if (order.status === OrderStatus.PAID) {
+      // 幂等：已成功则直接返回
+      if (tx.status === TransactionStatus.SUCCESS) {
         return this.toXml({ return_code: 'SUCCESS', return_msg: 'OK' });
       }
 
-      // 金额校验：回调金额必须与订单金额一致
+      // 金额校验
       const notifyFee = parseInt(result.total_fee) || 0;
-      if (notifyFee !== order.total_amount) {
+      if (notifyFee !== tx.amount) {
         return this.toXml({ return_code: 'FAIL', return_msg: '金额不匹配' });
       }
 
-      order.status = OrderStatus.PAID;
-      order.paid_at = new Date();
-      order.wx_transaction_id = result.transaction_id;
-      await this.orderRepo.save(order);
+      tx.status = TransactionStatus.SUCCESS;
+      tx.third_party_no = result.transaction_id;
+      tx.raw_data = result;
+      await this.txRepo.save(tx);
 
-      // 更新交易记录
-      await this.txRepo.update(
-        { transaction_no: orderNo },
-        {
-          status: TransactionStatus.SUCCESS,
-          third_party_no: result.transaction_id,
-          raw_data: result,
-        },
-      );
-
-      // TODO: 发送微信模板消息通知
+      await this.orderService.onPaymentSuccess(tx.order_id, tx.stage === PaymentStage.FINAL ? 'final' : 'deposit', result.transaction_id);
     }
 
     return this.toXml({ return_code: 'SUCCESS', return_msg: 'OK' });
   }
 
-  /** 创建保证金支付 */
-  async payDeposit(userId: number) {
+  /** 开发环境模拟支付：直接标记支付成功并推进订单状态 */
+  async mockPay(userId: number, orderId: number, stage: PaymentStage) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new BadRequestException('生产环境不允许模拟支付');
+    }
+    const { order, amount } = await this.resolvePayable(userId, orderId, stage);
+
     const tx = this.txRepo.create({
       transaction_no: this.generateTxNo(),
       user_id: userId,
-      type: TransactionType.DEPOSIT,
-      amount: this.config.deposit.amount,
-      status: TransactionStatus.PENDING,
+      order_id: order.id,
+      type: TransactionType.PAY,
+      stage,
+      amount,
+      status: TransactionStatus.SUCCESS,
+      pay_method: 'mock',
+      third_party_no: 'MOCK' + Date.now(),
     });
     await this.txRepo.save(tx);
-    return tx;
+
+    return this.orderService.onPaymentSuccess(order.id, stage === PaymentStage.FINAL ? 'final' : 'deposit');
+  }
+
+  /** 订单支付记录 */
+  async findByOrder(orderId: number) {
+    return this.txRepo.find({ where: { order_id: orderId }, order: { created_at: 'DESC' } });
   }
 
   /** 微信签名 */

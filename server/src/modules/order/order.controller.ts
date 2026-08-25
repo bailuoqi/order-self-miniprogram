@@ -15,11 +15,31 @@ export class OrderController {
     return this.service.findAll(query);
   }
 
-  // 用户: 创建订单
+  // Admin: 仪表盘统计
+  @Get("stats/dashboard")
+  @UseGuards(AdminAuthGuard)
+  dashboardStats() {
+    return this.service.dashboardStats();
+  }
+
+  // 公开: 评价精选
+  @Get("reviews")
+  reviews(@Query() query: any) {
+    return this.service.findReviews(query.product_id ? +query.product_id : undefined, query.limit ? +query.limit : 10);
+  }
+
+  // 用户: 从标准服务下单（进入待报价）
   @Post()
   @UseGuards(JwtAuthGuard)
   create(@CurrentUser() user: any, @Body() body: any) {
-    return this.service.create(user.id, body);
+    return this.service.createFromProduct(user.id, body);
+  }
+
+  // 用户: 发布自定义需求
+  @Post("custom")
+  @UseGuards(JwtAuthGuard)
+  createCustom(@CurrentUser() user: any, @Body() body: any) {
+    return this.service.createCustom(user.id, body);
   }
 
   // 用户: 我的订单
@@ -29,20 +49,6 @@ export class OrderController {
     return this.service.findByUser(user.id, query.status, query.page, query.pageSize);
   }
 
-  // 员工: 我的接单
-  @Get("employee")
-  @UseGuards(JwtAuthGuard)
-  employeeOrders(@CurrentUser() user: any, @Query() query: any) {
-    return this.service.findEmployeeOrders(user.id, query.status, query.page, query.pageSize);
-  }
-
-  // 任务池
-  @Get("pool")
-  @UseGuards(JwtAuthGuard)
-  taskPool(@Query() query: any) {
-    return this.service.findTaskPool(query.category_id, query.page, query.pageSize);
-  }
-
   // 管理员: 订单详情
   @Get("admin/:id")
   @UseGuards(AdminAuthGuard)
@@ -50,29 +56,73 @@ export class OrderController {
     return this.service.findOne(+id);
   }
 
-  // 用户/员工: 订单详情（验证所有权）
+  // 用户: 订单详情（验证所有权）
   @Get(":id")
   @UseGuards(JwtAuthGuard)
   detail(@Param("id") id: string, @CurrentUser() user: any) {
     return this.service.findUserOrder(+id, user.id);
   }
 
-  @Post(":id/accept")
-  @UseGuards(JwtAuthGuard)
-  accept(@Param("id") id: string, @CurrentUser() user: any) {
-    return this.service.acceptOrder(+id, user.id);
+  // Admin: 填写/修改报价
+  @Post(":id/quote")
+  @UseGuards(AdminAuthGuard)
+  quote(@Param("id") id: string, @CurrentUser() admin: any, @Body() body: any) {
+    return this.service.quote(+id, body, admin.username);
   }
 
-  @Post(":id/complete")
+  // 用户: 确认报价
+  @Post(":id/confirm-quote")
   @UseGuards(JwtAuthGuard)
-  complete(@Param("id") id: string, @CurrentUser() user: any) {
-    return this.service.completeOrder(+id, user.id);
+  confirmQuote(@Param("id") id: string, @CurrentUser() user: any) {
+    return this.service.confirmQuote(+id, user.id);
   }
 
+  // Admin: 上传交付成果
+  @Post(":id/deliver")
+  @UseGuards(AdminAuthGuard)
+  deliver(@Param("id") id: string, @CurrentUser() admin: any, @Body() body: any) {
+    return this.service.deliver(+id, body, admin.username);
+  }
+
+  // Admin: 分配负责成员
+  @Post(":id/assign")
+  @UseGuards(AdminAuthGuard)
+  assign(@Param("id") id: string, @Body() body: { admin_id: number; admin_name: string }) {
+    return this.service.assign(+id, body.admin_id, body.admin_name);
+  }
+
+  // Admin: 催付标记
+  @Post(":id/remind")
+  @UseGuards(AdminAuthGuard)
+  remind(@Param("id") id: string) {
+    return this.service.remindPayment(+id);
+  }
+
+  // 用户: 评价
+  @Post(":id/review")
+  @UseGuards(JwtAuthGuard)
+  review(@Param("id") id: string, @CurrentUser() user: any, @Body() body: any) {
+    return this.service.review(+id, user.id, body);
+  }
+
+  // 用户: 取消订单
+  @Post(":id/cancel")
+  @UseGuards(JwtAuthGuard)
+  cancel(@Param("id") id: string, @CurrentUser() user: any, @Body() body: any) {
+    return this.service.cancelByUser(+id, user.id, body?.reason);
+  }
+
+  // Admin: 取消订单
+  @Post("admin/:id/cancel")
+  @UseGuards(AdminAuthGuard)
+  adminCancel(@Param("id") id: string, @Body() body: any) {
+    return this.service.cancelByAdmin(+id, body?.reason);
+  }
+
+  // Admin: 直接改状态
   @Put(":id/status")
   @UseGuards(AdminAuthGuard)
   updateStatus(@Param("id") id: string, @Body() body: { status: string }) {
     return this.service.updateStatus(+id, body.status as any);
   }
 }
-

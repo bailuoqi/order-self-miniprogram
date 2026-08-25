@@ -31,10 +31,9 @@ export const ErrorCode = {
   REFUND_NOT_FOUND:   { code: 5002,  msg: '退款申请不存在' },
   REFUND_STATUS_ERR:  { code: 5003,  msg: '退款状态不允许此操作' },
 
-  // 员工
-  EMP_NOT_FOUND:      { code: 6001,  msg: '员工不存在' },
-  EMP_NOT_VERIFIED:   { code: 6002,  msg: '未完成员工认证' },
-  DEPOSIT_NOT_PAID:   { code: 6003,  msg: '未缴纳保证金' },
+  // 纳新申请
+  RECRUIT_NOT_FOUND:  { code: 6001,  msg: '申请不存在' },
+  RECRUIT_DUP:        { code: 6002,  msg: '已有申请正在审核中' },
 
   // 商品
   PRODUCT_NOT_FOUND:  { code: 7001,  msg: '商品不存在' },

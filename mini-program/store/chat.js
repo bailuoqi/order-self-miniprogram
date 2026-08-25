@@ -11,17 +11,22 @@ export const useChatStore = defineStore("chat", {
     async fetchSessions() {
       this.sessions = await api.get("/chat/sessions");
     },
-    async createSession(target_id, order_id) {
-      this.currentSession = await api.post("/chat/sessions", { target_id, order_id });
+    /** 按订单获取/创建会话（客户 ↔ 团队，用于报价商议） */
+    async openOrderSession(orderId) {
+      this.currentSession = await api.post("/chat/order-session", { order_id: orderId });
+      return this.currentSession;
     },
     async fetchMessages(sessionId, page = 1) {
       const res = await api.get(`/chat/messages/${sessionId}`, { page });
       this.messages = res.list;
     },
-    async sendMessage(sessionId, content, receiver_id) {
-      const msg = await api.post(`/chat/messages/${sessionId}`, { content, receiver_id });
+    async sendMessage(sessionId, content) {
+      const msg = await api.post(`/chat/messages/${sessionId}`, { content });
       this.messages.push(msg);
       return msg;
+    },
+    async markRead(sessionId) {
+      await api.post(`/chat/read/${sessionId}`);
     },
   },
 });

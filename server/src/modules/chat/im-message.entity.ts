@@ -6,8 +6,9 @@ export enum MessageType { TEXT = 'text', IMAGE = 'image', FILE = 'file', SYSTEM 
 export class ImMessage {
   @PrimaryGeneratedColumn() id: number;
   @Column() session_id: number;
-  @Column() sender_id: number;
-  @Column() receiver_id: number;
+  /** 1 = 团队（后台成员）发送，0 = 客户发送 */
+  @Column({ default: 0 }) from_team: number;
+  @Column({ nullable: true }) sender_name: string;
   @Column({ type: 'varchar', default: MessageType.TEXT }) type: MessageType;
   @Column({ type: 'text' }) content: string;
   @Column({ nullable: true }) attachment: string;

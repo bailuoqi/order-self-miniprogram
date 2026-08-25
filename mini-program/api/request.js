@@ -1,5 +1,5 @@
 // API 请求封装 — 对接 NestJS 后端
-const BASE_URL = "http://139.155.139.83:3001";
+const BASE_URL = "http://localhost:3001/api";
 
 const request = (options) => {
   const token = uni.getStorageSync("token");
@@ -41,12 +41,12 @@ export const api = {
   delete: (url, data) => request({ url, method: "DELETE", data }),
 };
 
-// 上传文件
-export const uploadFile = (filePath) => {
+// 上传文件（type: 'image' 走图片校验，'file' 支持 pdf/zip 等附件）
+export const uploadFile = (filePath, type = "image") => {
   const token = uni.getStorageSync("token");
   return new Promise((resolve, reject) => {
     uni.uploadFile({
-      url: BASE_URL + "/upload/image",
+      url: BASE_URL + (type === "file" ? "/upload/file" : "/upload/image"),
       filePath,
       name: "file",
       header: { Authorization: `Bearer ${token}` },
