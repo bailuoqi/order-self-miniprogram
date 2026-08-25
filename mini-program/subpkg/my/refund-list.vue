@@ -1,19 +1,24 @@
 <template>
   <view class="page-refund">
     <view class="refund-item card hover-lift" v-for="r in refunds" :key="r.id" @click="goDetail(r)">
-      <view class="ri-header">
-        <text class="ri-order">退款单：{{ r.refund_no }}</text>
-        <text class="ri-status" :style="{ color: statusColor(r.status) }">{{ statusMap[r.status] || r.status }}</text>
+      <view class="rf-header">
+        <text class="rf-order">退款单：{{ r.refund_no }}</text>
+        <text class="rf-status" :style="{ color: statusColor(r.status) }">{{ statusMap[r.status] || r.status }}</text>
       </view>
-      <view class="ri-body">
-        <view class="ri-info">
-          <text class="ri-name">{{ r.order?.title || '订单 #' + r.order_id }}</text>
-          <text class="ri-reason">退款原因：{{ r.reason }}</text>
+      <view class="rf-body">
+        <view class="rf-info">
+          <text class="rf-name">{{ r.order?.title || '订单 #' + r.order_id }}</text>
+          <text class="rf-reason">退款原因：{{ r.reason }}</text>
         </view>
-        <text class="ri-amount">¥{{ fmtPrice(r.amount) }}</text>
+        <text class="rf-amount">¥{{ fmtPrice(r.amount) }}</text>
       </view>
     </view>
-    <view v-if="!refunds.length" class="empty">暂无退款记录</view>
+    <view v-if="!refunds.length" class="empty">
+      <view class="empty-icon-box">
+        <i class="ri-inbox-line" style="font-size:64rpx;color:#C5CAD6;" />
+      </view>
+      <text>暂无退款记录</text>
+    </view>
   </view>
 </template>
 
@@ -42,16 +47,17 @@ const fmtPrice = (fen) => (fen / 100).toFixed(2);
 <style lang="scss" scoped>
 .page-refund { padding: 20rpx; min-height: 100vh; background: var(--bg-page); }
 .refund-item { margin-bottom: 20rpx; }
-.ri-header { display: flex; justify-content: space-between; margin-bottom: 16rpx; }
-.ri-order { font-size: 24rpx; color: var(--text-light); }
-.ri-status { font-size: 26rpx; font-weight: 600; }
-.ri-body { display: flex; gap: 16rpx; align-items: center; }
-.ri-img { width: 100rpx; height: 100rpx; border-radius: 8rpx; background: #f0f0f0; }
-.ri-info { flex: 1; }
-.ri-name { font-size: 26rpx; font-weight: 600; display: block; }
-.ri-reason { font-size: 22rpx; color: var(--text-light); display: block; margin-top: 6rpx; }
-.ri-amount { font-size: 28rpx; color: var(--danger); font-weight: 700; }
-.empty { text-align: center; padding: 100rpx; color: var(--text-light); }
+.rf-header { display: flex; justify-content: space-between; margin-bottom: 16rpx; }
+.rf-order { font-size: 24rpx; color: var(--text-light); }
+.rf-status { font-size: 26rpx; font-weight: 600; }
+.rf-body { display: flex; gap: 16rpx; align-items: center; }
+.rf-img { width: 100rpx; height: 100rpx; border-radius: 8rpx; background: #f0f0f0; }
+.rf-info { flex: 1; }
+.rf-name { font-size: 26rpx; font-weight: 600; display: block; }
+.rf-reason { font-size: 22rpx; color: var(--text-light); display: block; margin-top: 6rpx; }
+.rf-amount { font-size: 28rpx; color: var(--danger); font-weight: 700; }
+.empty { text-align: center; padding: 100rpx; color: var(--text-light); display: flex; flex-direction: column; align-items: center; gap: 16rpx; }
+.empty-icon-box { width: 128rpx; height: 128rpx; border-radius: 50%; background: #F0F2F7; display: flex; align-items: center; justify-content: center; }
 
 /* #ifdef H5 */
 /* ==================== 桌面适配（规划书 §4.13 / 任务 D5，仅 H5 编译，不进小程序包） ==================== */

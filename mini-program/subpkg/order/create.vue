@@ -2,7 +2,7 @@
   <view class="page-create" v-if="product">
     <!-- 服务摘要 -->
     <view class="goods-card">
-      <image class="gc-img" :src="product.cover" mode="aspectFill" />
+      <image class="gc-img" :src="product.cover || '/static/images/cover-default.png'" mode="aspectFill" />
       <view class="gc-info">
         <text class="gc-name">{{ product.title }}</text>
         <text class="gc-spec">{{ product.delivery_days ? '参考工期：' + product.delivery_days : '' }}</text>

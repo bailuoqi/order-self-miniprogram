@@ -46,7 +46,12 @@
       </view>
 
       <view class="loading" v-if="loading">加载中...</view>
-      <view class="empty" v-if="!loading && !orders.length">暂无订单</view>
+      <view class="empty" v-if="!loading && !orders.length">
+        <view class="empty-icon-box">
+          <i class="ri-inbox-line" style="font-size:64rpx;color:#C5CAD6;" />
+        </view>
+        <text>暂无订单</text>
+      </view>
     </scroll-view>
   </view>
 </template>
@@ -128,6 +133,8 @@ const statusColor = (s) => ORDER_STATUS_COLOR[s] || '#999';
 .btn-action.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
 
 .loading, .empty { text-align: center; padding: 40rpx; color: var(--text-light); }
+.empty { display: flex; flex-direction: column; align-items: center; gap: 16rpx; padding: 100rpx 40rpx; }
+.empty-icon-box { width: 128rpx; height: 128rpx; border-radius: 50%; background: #F0F2F7; display: flex; align-items: center; justify-content: center; }
 
 /* #ifdef H5 */
 /* ==================== 桌面适配（任务 C3，仅 H5 编译，不进小程序包） ==================== */

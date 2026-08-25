@@ -13,7 +13,7 @@
     <!-- 商品列表 -->
     <view class="product-list">
       <view class="product-item hover-lift" v-for="p in products" :key="p.id" @click="goDetail(p)">
-        <image class="p-img" :src="p.cover" mode="aspectFill" />
+        <image class="p-img" :src="p.cover || '/static/images/cover-default.png'" mode="aspectFill" />
         <view class="p-info">
           <text class="p-name text-ellipsis-2">{{ p.title }}</text>
           <view class="p-meta">
@@ -33,7 +33,12 @@
     </view>
 
     <view v-if="loading" class="loading">加载中...</view>
-    <view v-if="finished && !products.length" class="empty">暂无相关服务</view>
+    <view v-if="finished && !products.length" class="empty">
+      <view class="empty-icon-box">
+        <i class="ri-inbox-line" style="font-size:64rpx;color:#C5CAD6;" />
+      </view>
+      <text>暂无相关服务</text>
+    </view>
   </view>
 </template>
 
@@ -110,6 +115,8 @@ const goDetail = (p) => uni.navigateTo({ url: '/subpkg/product/detail?id=' + p.i
 .p-price { .symbol { color: var(--danger); font-size: 24rpx; font-weight: 700; } .value { color: var(--danger); font-size: 36rpx; font-weight: 700; } .unit { color: var(--text-light); font-size: 22rpx; } }
 .btn-buy { background: linear-gradient(135deg, #2979FF, #1565C0); color: #fff; font-size: 24rpx; padding: 12rpx 28rpx; border-radius: 30rpx; font-weight: 600; }
 .loading, .empty { text-align: center; padding: 60rpx; color: var(--text-light); }
+.empty { display: flex; flex-direction: column; align-items: center; gap: 16rpx; padding: 100rpx 60rpx; }
+.empty-icon-box { width: 128rpx; height: 128rpx; border-radius: 50%; background: #F0F2F7; display: flex; align-items: center; justify-content: center; }
 
 /* #ifdef H5 */
 /* ==================== 桌面适配（B5，仅 H5 编译，不进小程序包） ==================== */

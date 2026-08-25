@@ -2,7 +2,7 @@
   <view class="page-detail" v-if="product">
     <!-- 封面 -->
     <view class="img-wrap">
-      <image class="cover-img" :src="product.cover" mode="aspectFill" />
+      <image class="cover-img" :src="product.cover || '/static/images/cover-default.png'" mode="aspectFill" />
     </view>
 
     <!-- 价格&标题 -->
