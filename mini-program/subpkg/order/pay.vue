@@ -150,7 +150,8 @@ const doMockPay = async () => {
 @include screen-tablet-up {
   .pay-amount { padding: 60rpx 30rpx; }
 
-  .btn-mock { position: relative; }
+  /* uni-button 默认 overflow:hidden，会把突出按钮上缘的角标裁掉，需放开 */
+  .btn-mock { position: relative; overflow: visible; }
 
   .demo-badge {
     display: block;
