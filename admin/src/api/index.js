@@ -14,10 +14,13 @@ api.interceptors.request.use(config => {
 api.interceptors.response.use(
   res => res.data,
   err => {
-    if (err.response?.status === 401) {
+    // 登录接口本身的 401（密码错误）不触发跳转，让登录页展示错误提示；
+    // 已在登录页时也不再整页刷新，避免报错信息被冲掉
+    const isLoginCall = err.config?.url?.includes('/auth/admin-login')
+    if (err.response?.status === 401 && !isLoginCall) {
       localStorage.removeItem('admin_token')
       localStorage.removeItem('admin_info')
-      window.location.href = '/login'
+      if (window.location.pathname !== '/login') window.location.href = '/login'
     }
     return Promise.reject(err.response?.data || err)
   }
