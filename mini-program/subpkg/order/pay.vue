@@ -29,13 +29,8 @@
       <button class="btn-pay" :disabled="paying" @click="doPay">
         {{ stage === 'deposit' ? '支付定金' : '支付尾款' }} ¥{{ fmtPrice(amount) }}
       </button>
-      <!-- 开发环境模拟支付 -->
-      <button class="btn-mock" :disabled="paying" @click="doMockPay">
-        模拟支付成功（开发演示）
-        <!-- #ifdef H5 -->
-        <text class="demo-badge">演示环境</text>
-        <!-- #endif -->
-      </button>
+      <!-- 开发环境模拟支付（H5 宽屏加「演示环境」角标，见样式区 C6） -->
+      <button class="btn-mock" :disabled="paying" @click="doMockPay">模拟支付成功（开发演示）<!-- #ifdef H5 --><text class="demo-badge">演示环境</text><!-- #endif --></button>
     </view>
   </view>
 </template>
