@@ -9,11 +9,14 @@
   <!-- ====== Banner ====== -->
   <template v-if="comp.type==='banner'">
     <div class="pe-section"><div class="pe-section-title">轮播图</div>
-      <div class="pe-row"><label>高度</label><input type="number" v-model.number="comp.props.height" class="pe-input" @input="emitChange" /> px</div>
-      <div class="pe-row"><label>圆角</label><input type="number" v-model.number="comp.props.radius" class="pe-input" @input="emitChange" /> px</div>
-      <div class="pe-row"><label>切换间隔</label><input type="number" v-model.number="comp.props.interval" class="pe-input" @input="emitChange" /> ms</div>
+      <div class="pe-row"><label>高度</label><input type="number" v-model.number="comp.props.height" class="pe-input" min="60" max="400" @input="emitChange" /> px</div>
+      <div class="pe-row"><label>圆角</label><input type="number" v-model.number="comp.props.radius" class="pe-input" min="0" max="40" @input="emitChange" /> px</div>
+      <div class="pe-row"><label>切换间隔</label><input type="number" v-model.number="comp.props.interval" class="pe-input" min="1000" max="10000" step="500" @input="emitChange" /> ms</div>
       <div class="pe-row"><label>显示圆点</label><label class="pe-switch"><input type="checkbox" v-model="comp.props.dots" @change="emitChange" /></label></div>
-      <div class="pe-row" style="flex-direction:column;align-items:flex-start"><label>图片URL (一行一个)</label>
+      <div class="pe-row" style="flex-direction:column;align-items:flex-start"><label>轮播图片</label>
+        <ImageUploader multiple v-model="comp.props.images" @change="emitChange" />
+      </div>
+      <div class="pe-row" style="flex-direction:column;align-items:flex-start"><label>或粘贴图片URL (一行一个)</label>
         <textarea v-model="imagesText" class="pe-textarea" rows="3" placeholder="https://..." @input="parseImages"></textarea>
       </div>
     </div>
@@ -72,10 +75,13 @@
   <!-- ====== ImageAd ====== -->
   <template v-else-if="comp.type==='imageAd'">
     <div class="pe-section"><div class="pe-section-title">图片广告</div>
-      <div class="pe-row"><label>图片URL</label><input v-model="comp.props.src" class="pe-input" @input="emitChange" /></div>
+      <div class="pe-row" style="flex-direction:column;align-items:flex-start"><label>广告图片</label>
+        <ImageUploader v-model="comp.props.src" @change="emitChange" />
+      </div>
+      <div class="pe-row"><label>图片URL</label><input v-model="comp.props.src" class="pe-input" placeholder="或直接粘贴 URL" @input="emitChange" /></div>
       <div class="pe-row"><label>链接</label><input v-model="comp.props.link" class="pe-input" @input="emitChange" /></div>
-      <div class="pe-row"><label>高度</label><input type="number" v-model.number="comp.props.height" class="pe-input" @input="emitChange" /> px</div>
-      <div class="pe-row"><label>圆角</label><input type="number" v-model.number="comp.props.radius" class="pe-input" @input="emitChange" /> px</div>
+      <div class="pe-row"><label>高度</label><input type="number" v-model.number="comp.props.height" class="pe-input" min="40" max="500" @input="emitChange" /> px</div>
+      <div class="pe-row"><label>圆角</label><input type="number" v-model.number="comp.props.radius" class="pe-input" min="0" max="40" @input="emitChange" /> px</div>
     </div>
   </template>
 
@@ -125,12 +131,33 @@
       <div class="pe-row" v-if="comp.props.layout==='grid'"><label>列数</label><input type="number" v-model.number="comp.props.columns" class="pe-input" @input="emitChange" min="1" max="4" /></div>
       <div class="pe-row"><label>显示角标</label><label class="pe-switch"><input type="checkbox" v-model="comp.props.showBadge" @change="emitChange" /></label></div>
     </div>
+    <div class="pe-section"><div class="pe-section-title">服务数据</div>
+      <button type="button" class="pe-add-btn" @click="showProductPicker=true"><i class="ri-shopping-bag-3-line"></i> 选择服务（已选 {{(comp.props.goods||[]).length}}）</button>
+      <div v-if="(comp.props.goods||[]).length" class="pe-goods-list">
+        <div v-for="(g,i) in comp.props.goods" :key="g.id" class="pe-goods-item">
+          <span class="pe-goods-cover"><img v-if="g.cover" :src="g.cover" /><i v-else class="ri-image-line"></i></span>
+          <span class="pe-goods-title">{{g.title}}</span>
+          <span class="pe-goods-price">¥{{g.price}}</span>
+          <button type="button" class="pe-item-del" title="移除" @click="removeGoods(i)">x</button>
+        </div>
+      </div>
+      <div v-else class="pe-hint">未选择服务时画布显示灰色占位卡片</div>
+      <ProductPicker v-if="showProductPicker" :selected="comp.props.goods||[]" @confirm="onPickGoods" @cancel="showProductPicker=false" />
+    </div>
   </template>
 
   <!-- ====== ArticleList ====== -->
   <template v-else-if="comp.type==='articleList'">
     <div class="pe-section"><div class="pe-section-title">文章列表</div>
       <div class="pe-row"><label>标题</label><input v-model="comp.props.title" class="pe-input" @input="emitChange" /></div>
+      <div class="pe-row"><label>数据来源</label><select v-model="comp.props.cmsType" class="pe-input" @change="emitChange">
+        <option value="">占位演示（不绑定）</option>
+        <option value="notice">公告 notice</option>
+        <option value="help">帮助 help</option>
+        <option value="about">关于 about</option>
+        <option value="banner">轮播素材 banner</option>
+      </select></div>
+      <div class="pe-hint">绑定后画布展示对应 CMS 类型的真实文章标题</div>
       <div class="pe-row"><label>数量</label><input type="number" v-model.number="comp.props.count" class="pe-input" @input="emitChange" min="1" max="10" /></div>
       <div class="pe-row"><label>显示封面</label><label class="pe-switch"><input type="checkbox" v-model="comp.props.showCover" @change="emitChange" /></label></div>
       <div class="pe-row"><label>显示日期</label><label class="pe-switch"><input type="checkbox" v-model="comp.props.showDate" @change="emitChange" /></label></div>
@@ -141,8 +168,11 @@
   <template v-else-if="comp.type==='videoPlayer'">
     <div class="pe-section"><div class="pe-section-title">视频</div>
       <div class="pe-row"><label>视频URL</label><input v-model="comp.props.src" class="pe-input" @input="emitChange" /></div>
-      <div class="pe-row"><label>封面URL</label><input v-model="comp.props.poster" class="pe-input" @input="emitChange" /></div>
-      <div class="pe-row"><label>高度</label><input type="number" v-model.number="comp.props.height" class="pe-input" @input="emitChange" /> px</div>
+      <div class="pe-row" style="flex-direction:column;align-items:flex-start"><label>视频封面</label>
+        <ImageUploader v-model="comp.props.poster" @change="emitChange" />
+      </div>
+      <div class="pe-row"><label>封面URL</label><input v-model="comp.props.poster" class="pe-input" placeholder="或直接粘贴 URL" @input="emitChange" /></div>
+      <div class="pe-row"><label>高度</label><input type="number" v-model.number="comp.props.height" class="pe-input" min="100" max="500" @input="emitChange" /> px</div>
       <div class="pe-row"><label>自动播放</label><label class="pe-switch"><input type="checkbox" v-model="comp.props.autoplay" @change="emitChange" /></label></div>
     </div>
   </template>
@@ -193,16 +223,35 @@
 
 <script setup>
 import { ref, watch } from 'vue'
+import ImageUploader from '@/components/builder/ImageUploader.vue'
+import ProductPicker from '@/components/builder/ProductPicker.vue'
 
 const props = defineProps({ comp: Object })
 const emit = defineEmits(['change'])
 
 const imagesText = ref('')
 const hotWordsText = ref('')
+const showProductPicker = ref(false)
 
 function emitChange() {
   emit('change')
 }
+
+function onPickGoods(list) {
+  if (props.comp && props.comp.props) props.comp.props.goods = list
+  showProductPicker.value = false
+  emitChange()
+}
+
+function removeGoods(i) {
+  if (props.comp && props.comp.props && props.comp.props.goods) {
+    props.comp.props.goods.splice(i, 1)
+    emitChange()
+  }
+}
+
+// 切换选中组件时关闭弹窗
+watch(() => props.comp, () => { showProductPicker.value = false })
 
 function parseImages() {
   const lines = imagesText.value.split(/[\n,]/).map(s => s.trim()).filter(Boolean)
@@ -262,5 +311,12 @@ watch(() => props.comp?.props?.hotWords, (words) => {
 .pe-item-del{background:none;border:none;color:#ff4d4f;cursor:pointer;font-size:14px}
 .pe-add-btn{width:100%;padding:6px;border:1px dashed #d9d9d9;background:none;border-radius:6px;color:#2979FF;cursor:pointer;font-size:12px}
 .pe-add-btn:hover{border-color:#2979FF;background:#f5f8ff}
+.pe-hint{font-size:11px;color:#bbb;margin:4px 0 8px;line-height:1.5}
+.pe-goods-list{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.pe-goods-item{display:flex;align-items:center;gap:8px;padding:6px;border:1px solid #f0f0f0;border-radius:6px;background:#fafafa;font-size:12px}
+.pe-goods-cover{width:32px;height:32px;border-radius:4px;overflow:hidden;background:#f0f0f0;display:flex;align-items:center;justify-content:center;color:#ccc;flex-shrink:0}
+.pe-goods-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.pe-goods-title{flex:1;color:#333;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.pe-goods-price{color:#ff4d4f;font-weight:600;flex-shrink:0}
 .pe-none{padding:20px;text-align:center;color:#bbb}
 </style>
