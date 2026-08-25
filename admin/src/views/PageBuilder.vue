@@ -1,52 +1,56 @@
 <template>
 <div class="builder-shell">
 <div class="top-toolbar">
-<div class="toolbar-left"><span class="logo"><i class="ri-brush-3-line"></i> 店铺装修</span><span class="page-tag">首页</span></div>
+<div class="toolbar-left">
+<button class="tool-btn back-btn" title="返回后台" @click="goBack"><i class="ri-arrow-left-line"></i> 返回后台</button>
+<span class="logo"><i class="ri-brush-3-line"></i> 店铺装修</span>
+<span class="page-tag">首页</span>
+<span v-if="draftUnpublished" class="draft-badge" title="草稿内容与已发布配置不一致，点「发布」写入线上">草稿未发布</span>
+<span v-if="isDirty" class="dirty-badge" title="有修改尚未保存（Ctrl+S 保存草稿）">未保存</span>
+</div>
 <div class="toolbar-center">
 <button :class="['tool-btn',{active:!previewMode}]" @click="previewMode=false"><i class="ri-edit-line"></i> 编辑</button>
 <button :class="['tool-btn',{active:previewMode}]" @click="previewMode=true"><i class="ri-eye-line"></i> 预览</button>
-<button class="tool-btn" @click="undo" :disabled="historyIdx<=0"><i class="ri-arrow-go-back-line"></i></button>
-<button class="tool-btn" @click="redo" :disabled="historyIdx>=history.length-1"><i class="ri-arrow-go-forward-line"></i></button>
-<button class="tool-btn" @click="clearAll"><i class="ri-delete-bin-line"></i></button>
+<button class="tool-btn" title="撤销 Ctrl+Z" @click="undo" :disabled="historyIdx<=0"><i class="ri-arrow-go-back-line"></i></button>
+<button class="tool-btn" title="重做 Ctrl+Shift+Z / Ctrl+Y" @click="redo" :disabled="historyIdx>=history.length-1"><i class="ri-arrow-go-forward-line"></i></button>
+<button class="tool-btn" title="清空画布" @click="clearAll"><i class="ri-delete-bin-line"></i></button>
+<div class="zoom-group" v-show="!previewMode">
+<button v-for="z in zoomOpts" :key="z.v" :class="['zoom-btn',{on:zoom===z.v}]" @click="zoom=z.v">{{z.label}}</button>
+</div>
 </div>
 <div class="toolbar-right">
 <button class="tool-btn" @click="showTemplates=true"><i class="ri-layout-line"></i> 模板</button>
 <button class="tool-btn" @click="showGlobal=true"><i class="ri-settings-3-line"></i> 全局</button>
-<button class="btn btn-outline btn-sm" @click="saveDraft">保存草稿</button>
+<button class="btn btn-outline btn-sm" title="Ctrl+S" @click="saveDraft">保存草稿</button>
 <button class="btn btn-primary btn-sm" @click="publish">发布</button>
 <span v-if="saveStatus==='saving'" class="save-stat"><i class="ri-loader-4-line ri-spin"></i> 保存中</span>
-<span v-if="saveStatus==='saved'" class="save-stat ok"><i class="ri-check-line"></i> 已保存</span>
-<span v-if="saveStatus==='error'" class="save-stat err"><i class="ri-close-line"></i> 失败</span>
+<span v-else-if="saveStatus==='saved'" class="save-stat ok"><i class="ri-check-line"></i> 已保存</span>
+<span v-else-if="saveStatus==='error'" class="save-stat err"><i class="ri-close-line"></i> 失败<button class="retry-btn" @click="retryLast">重试</button></span>
 </div>
+</div>
+<div class="notice-strip">
+<i class="ri-information-line"></i>
+<span>装修配置暂未接通客户端首页展示（二期接通）——保存/发布仅写入 page-config，小程序首页当前仍为固定版式。草稿存 <code>home-draft</code>，发布写 <code>home</code>。</span>
 </div>
 <div class="builder-body" v-show="!previewMode">
 <div class="lib-panel">
 <div class="panel-tabs">
 <div v-for="t in libTabs" :key="t.key" :class="['ptab',{on:libTab===t.key}]" @click="libTab=t.key">{{t.label}}</div>
 </div>
-<div class="lib-list" v-show="libTab==='basic'">
-<div v-for="c in baseComps" :key="c.type" class="lib-item" draggable="true" @dragstart="onLibDrag($event,c)">
-<div class="lib-icon"><i :class="c.icon"></i></div><div class="lib-name">{{c.label}}</div>
+<div class="lib-list">
+<div v-for="c in libGroups[libTab]" :key="c.type" class="lib-item" draggable="true"
+  :title="c.noData?'该组件当前无后端数据，仅作版式占位':''"
+  @dragstart="onLibDrag($event,c)" @dragend="onDragEnd">
+<div class="lib-icon"><i :class="c.icon"></i></div>
+<div class="lib-name">{{c.label}}</div>
+<span v-if="c.noData" class="lib-badge">无数据支撑</span>
 </div>
 </div>
-<div class="lib-list" v-show="libTab==='market'">
-<div v-for="c in marketComps" :key="c.type" class="lib-item" draggable="true" @dragstart="onLibDrag($event,c)">
-<div class="lib-icon"><i :class="c.icon"></i></div><div class="lib-name">{{c.label}}</div>
+<div class="lib-foot"><i class="ri-plug-line"></i> 组件的线上渲染将于二期接通客户端首页</div>
 </div>
-</div>
-<div class="lib-list" v-show="libTab==='content'">
-<div v-for="c in contentComps" :key="c.type" class="lib-item" draggable="true" @dragstart="onLibDrag($event,c)">
-<div class="lib-icon"><i :class="c.icon"></i></div><div class="lib-name">{{c.label}}</div>
-</div>
-</div>
-<div class="lib-list" v-show="libTab==='tool'">
-<div v-for="c in toolComps" :key="c.type" class="lib-item" draggable="true" @dragstart="onLibDrag($event,c)">
-<div class="lib-icon"><i :class="c.icon"></i></div><div class="lib-name">{{c.label}}</div>
-</div>
-</div>
-</div>
-<div class="canvas-panel" @click.self="selIdx=-1">
-<div class="phone">
+<div class="canvas-panel" ref="canvasPanelEl" @click.self="selIdx=-1">
+<div class="phone-scale-wrap" :style="{width:phoneSize.w*scale+'px',height:phoneSize.h*scale+'px'}">
+<div class="phone" ref="phoneEl" :style="{transform:'scale('+scale+')'}">
 <div class="phone-top"><div class="phone-notch"></div></div>
 <div class="phone-screen" @click.self="selIdx=-1">
 <div class="s-navbar" v-if="global.navStyle!=='none'" :style="navBarStyle">
@@ -54,8 +58,12 @@
 <div class="s-title" v-if="global.navStyle==='default'">{{global.pageTitle||'首页'}}</div>
 <div class="s-search" v-if="global.navStyle==='search'"><i class="ri-search-line"></i> 搜索</div>
 </div>
-<div class="s-body" :style="{background:global.bgColor||'#f5f6fa'}" @dragover.prevent @drop.prevent="onCanvasDrop">
-<div v-for="(c,i) in components" :key="c._id" :class="['s-comp',{selected:selIdx===i}]" @click.stop="selIdx=i" draggable="true" @dragstart.stop="onReorderStart($event,i)" @dragover.prevent @drop.stop="onReorderDrop($event,i)">
+<div class="s-body" :style="{background:global.bgColor||'#f5f6fa'}" @dragover.prevent="onBodyDragOver" @drop.prevent="onBodyDrop" @dragleave="onBodyDragLeave">
+<div v-for="(c,i) in components" :key="c._id"
+  :class="['s-comp',{selected:selIdx===i,hovered:hoverIdx===i,'di-before':dropIndicator&&dropIndicator.index===i&&dropIndicator.pos==='before','di-after':dropIndicator&&dropIndicator.index===i&&dropIndicator.pos==='after'}]"
+  @click.stop="selIdx=i" @dblclick.stop="focusProps(i)"
+  draggable="true" @dragstart.stop="onReorderStart($event,i)" @dragend="onDragEnd"
+  @dragover.prevent.stop="onCompDragOver($event,i)" @drop.stop.prevent="onCompDrop($event,i)">
 <div v-if="selIdx===i" class="s-comp-bar">
 <span class="s-comp-name">{{getCompLabel(c.type)}}</span>
 <button @click.stop="moveUp(i)" :disabled="i===0"><i class="ri-arrow-up-s-line"></i></button>
@@ -65,7 +73,7 @@
 </div>
 <CompRenderer :type="c.type" :props="c.props" :global="global" />
 </div>
-<div v-if="!components.length" class="s-empty" @dragover.prevent @drop.prevent="onCanvasDrop">
+<div v-if="!components.length" :class="['s-empty',{active:!!dragPayload}]">
 <i class="ri-drag-drop-line"></i><p>拖拽组件到这里</p>
 </div>
 </div>
@@ -78,15 +86,18 @@
 <div class="phone-bottom"><div class="phone-home"></div></div>
 </div>
 </div>
+</div>
 <div class="prop-panel">
-<div class="prop-title">{{selIdx>=0?'属性编辑':'组件列表'}}</div>
-<div v-if="selIdx>=0&&components[selIdx]" class="prop-body">
+<div class="prop-title">{{selIdx>=0?'属性编辑':'图层列表'}}</div>
+<div v-if="selIdx>=0&&components[selIdx]" class="prop-body" ref="propBodyEl">
 <PropsEditor :comp="components[selIdx]" @change="saveHistory" />
 </div>
-<div v-else class="prop-empty">
-<i class="ri-cursor-line"></i><p>选择组件进行编辑</p>
+<div v-else class="prop-body">
+<LayerList :components="components" :selected-idx="selIdx" :meta="compMeta"
+  @select="selIdx=$event" @reorder="onLayerReorder" @hover="hoverIdx=$event" />
 </div>
 </div>
+<div v-if="loading" class="loading-mask"><i class="ri-loader-4-line ri-spin"></i> 正在载入装修配置…</div>
 </div>
 <div class="preview-mode" v-show="previewMode">
 <div class="phone" style="margin:20px auto">
@@ -98,7 +109,7 @@
 <div class="s-search" v-if="global.navStyle==='search'"><i class="ri-search-line"></i> 搜索</div>
 </div>
 <div class="s-body" :style="{background:global.bgColor||'#f5f6fa'}">
-<CompRenderer v-for="c in components" :key="c._id" :type="c.type" :props="c.props" :global="global" />
+<CompRenderer v-for="c in components" :key="c._id" :type="c.type" :props="c.props" :global="global" :preview="true" />
 </div>
 <div class="s-tabbar" v-if="global.showTabbar">
 <div v-for="t in global.tabItems" :key="t.name" :class="['s-tab',{on:t.active}]">
@@ -156,12 +167,23 @@
 </div>
 </div>
 <div v-if="showConfirm" class="modal-overlay" @click.self="showConfirm=false">
-<div class="modal-box" style="width:360px;text-align:center">
+<div class="modal-box" style="width:380px;text-align:center">
 <h3>{{confirmTitle}}</h3>
-<p style="color:#888;margin:12px 0">{{confirmMsg}}</p>
+<p style="color:#888;margin:12px 0;line-height:1.6">{{confirmMsg}}</p>
 <div style="display:flex;gap:10px;justify-content:center">
 <button class="btn btn-outline" @click="showConfirm=false">取消</button>
-<button class="btn btn-primary" @click="confirmAction();showConfirm=false">确定</button>
+<button class="btn btn-primary" @click="runConfirm">确定</button>
+</div>
+</div>
+</div>
+<div v-if="showLeaveConfirm" class="modal-overlay">
+<div class="modal-box" style="width:420px">
+<h3><i class="ri-error-warning-line" style="color:#faad14"></i> 有未保存的修改</h3>
+<p style="color:#888;margin:12px 0;line-height:1.6">当前画布有尚未保存的修改，直接离开编辑器后这些修改将丢失。</p>
+<div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+<button class="btn btn-outline" @click="resolveLeave(false)">留在编辑器</button>
+<button class="btn btn-outline" @click="resolveLeave(true)">不保存离开</button>
+<button class="btn btn-primary" @click="saveAndLeave">保存草稿并离开</button>
 </div>
 </div>
 </div>
@@ -169,10 +191,14 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, nextTick } from 'vue'
+import { ref, reactive, computed, nextTick, onMounted, onUnmounted } from 'vue'
+import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import CompRenderer from '@/components/CompRenderer.vue'
 import PropsEditor from '@/components/PropsEditor.vue'
+import LayerList from '@/components/builder/LayerList.vue'
 import api from '@/api'
+
+const router = useRouter()
 
 // ---- Component Libraries ----
 const libTabs = [
@@ -192,16 +218,17 @@ const baseComps = [
   { type: 'imageAd', label: '图片广告', icon: 'ri-advertisement-line', defaultProps: { src: '', link: '', width: '100%', height: 120, radius: 8 } },
 ]
 
+// 营销组件后端无数据支撑（无 coupon 等模块），保留演示能力但如实标注
 const marketComps = [
-  { type: 'coupon', label: '优惠券', icon: 'ri-coupon-line', defaultProps: { coupons: [], style: 'card', showCount: 3 } },
-  { type: 'countdown', label: '倒计时', icon: 'ri-timer-line', defaultProps: { endTime: '', title: '限时抢购', bgColor: '#ff4d4f', color: '#fff' } },
-  { type: 'groupBuy', label: '拼团', icon: 'ri-group-line', defaultProps: { title: '拼团活动', products: [] } },
-  { type: 'seckill', label: '秒杀', icon: 'ri-flashlight-line', defaultProps: { title: '秒杀专区', products: [], showPrice: true, showProgress: true } },
+  { type: 'coupon', label: '优惠券', icon: 'ri-coupon-line', noData: true, defaultProps: { coupons: [], style: 'card', showCount: 3 } },
+  { type: 'countdown', label: '倒计时', icon: 'ri-timer-line', noData: true, defaultProps: { endTime: '', title: '限时抢购', bgColor: '#ff4d4f', color: '#fff' } },
+  { type: 'groupBuy', label: '拼团', icon: 'ri-group-line', noData: true, defaultProps: { title: '拼团活动', products: [] } },
+  { type: 'seckill', label: '秒杀', icon: 'ri-flashlight-line', noData: true, defaultProps: { title: '秒杀专区', products: [], showPrice: true, showProgress: true } },
 ]
 
 const contentComps = [
   { type: 'goodsRow', label: '商品行', icon: 'ri-shopping-bag-3-line', defaultProps: { title: '精选商品', goods: [], layout: 'scroll', showBadge: true, columns: 2 } },
-  { type: 'articleList', label: '文章列表', icon: 'ri-article-line', defaultProps: { title: '最新资讯', count: 3, showCover: true, showDate: true } },
+  { type: 'articleList', label: '文章列表', icon: 'ri-article-line', defaultProps: { title: '最新资讯', count: 3, showCover: true, showDate: true, cmsType: '' } },
   { type: 'videoPlayer', label: '视频播放', icon: 'ri-video-line', defaultProps: { src: '', poster: '', autoplay: false, height: 200 } },
   { type: 'richText', label: '富文本', icon: 'ri-file-text-line', defaultProps: { content: '<p>编辑内容...</p>', padding: 12 } },
 ]
@@ -213,17 +240,24 @@ const toolComps = [
 ]
 
 const allComps = [...baseComps, ...marketComps, ...contentComps, ...toolComps]
+const libGroups = { basic: baseComps, market: marketComps, content: contentComps, tool: toolComps }
+const compMeta = Object.fromEntries(allComps.map(c => [c.type, { label: c.label, icon: c.icon }]))
 
 // ---- State ----
 const previewMode = ref(false)
 const selIdx = ref(-1)
+const hoverIdx = ref(-1)
 const showTemplates = ref(false)
 const showGlobal = ref(false)
 const saveStatus = ref('')
+const loading = ref(true)
 const showConfirm = ref(false)
 const confirmTitle = ref('')
 const confirmMsg = ref('')
 let confirmAction = () => {}
+const showLeaveConfirm = ref(false)
+let leaveResolver = null
+let lastSaveOp = 'draft'
 
 const global = reactive({
   pageTitle: '首页',
@@ -274,6 +308,17 @@ function restoreSnapshot(snap) {
   selIdx.value = -1
 }
 
+// ---- Dirty tracking（未保存拦截的脏标记）----
+const lastSavedStr = ref('')
+function serializeState() {
+  return JSON.stringify({ components: components.value, global })
+}
+const isDirty = computed(() => !loading.value && serializeState() !== lastSavedStr.value)
+
+// ---- Draft / Publish channel state ----
+const draftUnpublished = ref(false)
+const publishedStr = ref('')
+
 // ---- Helpers ----
 let idCounter = Date.now()
 function genId() { return 'c_' + (idCounter++) }
@@ -288,35 +333,112 @@ function getCompDefaults(type) {
   return c ? JSON.parse(JSON.stringify(c.defaultProps)) : {}
 }
 
-// ---- Component Operations ----
+function ensureIds(list) {
+  return (list || []).map(c => ({ _id: c._id || genId(), type: c.type, props: c.props || {} }))
+}
+
+function openConfirm(title, msg, action) {
+  confirmTitle.value = title
+  confirmMsg.value = msg
+  confirmAction = action
+  showConfirm.value = true
+}
+
+function runConfirm() {
+  showConfirm.value = false
+  confirmAction()
+}
+
+// ---- Drag & Drop（lib:/sort: 前缀 + 模块级变量；dragover 阶段读不到 data，用变量判断源）----
+const dragPayload = ref(null) // {kind:'lib', type} | {kind:'sort', index}
+const dropIndicator = ref(null) // {index, pos:'before'|'after'}
+
 function onLibDrag(e, comp) {
-  e.dataTransfer.setData('text/plain', comp.type)
+  dragPayload.value = { kind: 'lib', type: comp.type }
+  e.dataTransfer.setData('text/plain', 'lib:' + comp.type)
   e.dataTransfer.effectAllowed = 'copy'
 }
 
-function onCanvasDrop(e) {
-  const type = e.dataTransfer.getData('text/plain')
-  if (!type) return
-  const defProps = getCompDefaults(type)
-  components.value.push({ _id: genId(), type, props: defProps })
-  selIdx.value = components.value.length - 1
-  saveHistory()
-}
-
 function onReorderStart(e, idx) {
-  e.dataTransfer.setData('text/plain', String(idx))
+  dragPayload.value = { kind: 'sort', index: idx }
+  e.dataTransfer.setData('text/plain', 'sort:' + idx)
   e.dataTransfer.effectAllowed = 'move'
 }
 
-function onReorderDrop(e, targetIdx) {
-  const fromIdx = parseInt(e.dataTransfer.getData('text/plain'))
-  if (isNaN(fromIdx) || fromIdx === targetIdx) return
-  const item = components.value.splice(fromIdx, 1)[0]
-  components.value.splice(targetIdx, 0, item)
-  selIdx.value = targetIdx
+function onDragEnd() {
+  dragPayload.value = null
+  dropIndicator.value = null
+}
+
+function onCompDragOver(e, i) {
+  if (!dragPayload.value) return
+  // 用元素中线判断上/下半区：clientY 与 rect 同为屏幕坐标，缩放态下无需除以缩放系数
+  const rect = e.currentTarget.getBoundingClientRect()
+  const pos = e.clientY < rect.top + rect.height / 2 ? 'before' : 'after'
+  dropIndicator.value = { index: i, pos }
+}
+
+function onBodyDragOver() {
+  if (!dragPayload.value) return
+  // 拖到组件间空白/画布尾部：指示追加到末尾（组件自身的 dragover 已 stop，不会走到这里）
+  if (components.value.length) dropIndicator.value = { index: components.value.length - 1, pos: 'after' }
+}
+
+function onBodyDragLeave(e) {
+  if (!e.relatedTarget || !e.currentTarget.contains(e.relatedTarget)) dropIndicator.value = null
+}
+
+function parseDragData(e) {
+  const raw = (e.dataTransfer && e.dataTransfer.getData('text/plain')) || ''
+  if (raw.startsWith('lib:')) return { kind: 'lib', type: raw.slice(4) }
+  if (raw.startsWith('sort:')) return { kind: 'sort', index: parseInt(raw.slice(5), 10) }
+  return dragPayload.value
+}
+
+function onCompDrop(e, i) {
+  const ind = dropIndicator.value
+  const insertIdx = (ind && ind.index === i) ? (ind.pos === 'before' ? i : i + 1) : i + 1
+  handleDrop(e, insertIdx)
+}
+
+function onBodyDrop(e) {
+  const ind = dropIndicator.value
+  const insertIdx = ind ? (ind.pos === 'before' ? ind.index : ind.index + 1) : components.value.length
+  handleDrop(e, insertIdx)
+}
+
+function handleDrop(e, insertIdx) {
+  const payload = parseDragData(e)
+  dropIndicator.value = null
+  dragPayload.value = null
+  if (!payload) return
+  if (payload.kind === 'lib') {
+    if (!allComps.find(c => c.type === payload.type)) return
+    components.value.splice(insertIdx, 0, { _id: genId(), type: payload.type, props: getCompDefaults(payload.type) })
+    selIdx.value = insertIdx
+    saveHistory()
+  } else if (payload.kind === 'sort') {
+    const from = payload.index
+    if (!Number.isInteger(from) || from < 0 || from >= components.value.length) return
+    let to = insertIdx
+    if (from < to) to--
+    if (to === from) return
+    const item = components.value.splice(from, 1)[0]
+    components.value.splice(to, 0, item)
+    selIdx.value = to
+    saveHistory()
+  }
+}
+
+function onLayerReorder({ from, to }) {
+  if (from === to || from < 0 || from >= components.value.length) return
+  const item = components.value.splice(from, 1)[0]
+  components.value.splice(to, 0, item)
+  selIdx.value = to
   saveHistory()
 }
 
+// ---- Component Operations ----
 function moveUp(i) {
   if (i > 0) {
     [components.value[i], components.value[i - 1]] = [components.value[i - 1], components.value[i]]
@@ -348,10 +470,50 @@ function delComp(i) {
 }
 
 function clearAll() {
-  confirmTitle.value = '清空所有组件'
-  confirmMsg.value = '确定要清空画布上所有组件吗？此操作可撤销。'
-  confirmAction = () => { components.value = []; selIdx.value = -1; saveHistory() }
-  showConfirm.value = true
+  openConfirm('清空所有组件', '确定要清空画布上所有组件吗？此操作可撤销。', () => {
+    components.value = []
+    selIdx.value = -1
+    saveHistory()
+  })
+}
+
+const propBodyEl = ref(null)
+function focusProps(i) {
+  selIdx.value = i
+  nextTick(() => {
+    const el = propBodyEl.value && propBodyEl.value.querySelector('input,textarea,select')
+    if (el) el.focus()
+  })
+}
+
+// ---- Canvas Zoom ----
+const zoomOpts = [
+  { v: '75', label: '75%' },
+  { v: '100', label: '100%' },
+  { v: '125', label: '125%' },
+  { v: 'fit', label: '适应' },
+]
+const zoom = ref('fit')
+const fitScale = ref(1)
+const scale = computed(() => zoom.value === 'fit' ? fitScale.value : Number(zoom.value) / 100)
+const canvasPanelEl = ref(null)
+const phoneEl = ref(null)
+const phoneSize = reactive({ w: 391, h: 700 })
+let resizeObserver = null
+
+function measurePhone() {
+  if (!phoneEl.value) return
+  // offsetWidth/offsetHeight 为布局尺寸，不受 transform:scale 影响
+  phoneSize.w = phoneEl.value.offsetWidth || 391
+  phoneSize.h = phoneEl.value.offsetHeight || 700
+  computeFit()
+}
+
+function computeFit() {
+  const panel = canvasPanelEl.value
+  if (!panel) return
+  const avail = panel.clientHeight - 32
+  fitScale.value = Math.min(1, Math.max(0.4, avail / (phoneSize.h || 700)))
 }
 
 // ---- Templates ----
@@ -400,9 +562,7 @@ const templates = [
 ]
 
 function applyTemplate(tpl) {
-  confirmTitle.value = '应用模板'
-  confirmMsg.value = '确定应用模板「' + tpl.name + '」？当前画布内容将被替换。'
-  confirmAction = () => {
+  openConfirm('应用模板', '确定应用模板「' + tpl.name + '」？当前画布内容将被替换（可一步撤销）。', () => {
     components.value = tpl.components.map(c => ({
       _id: genId(),
       type: c.type,
@@ -411,8 +571,7 @@ function applyTemplate(tpl) {
     selIdx.value = -1
     saveHistory()
     showTemplates.value = false
-  }
-  showConfirm.value = true
+  })
 }
 
 // ---- Nav Bar Style ----
@@ -421,101 +580,230 @@ const navBarStyle = computed(() => ({
   color: global.navTextColor || '#333333',
 }))
 
-// ---- Save / Publish ----
+// ---- Save / Publish（通道分离：草稿 home-draft，发布 home）----
+let savedTimer = null
+function markSaved() {
+  saveStatus.value = 'saved'
+  if (savedTimer) clearTimeout(savedTimer)
+  savedTimer = setTimeout(() => { if (saveStatus.value === 'saved') saveStatus.value = '' }, 2000)
+}
+
+function buildPayload() {
+  return JSON.parse(JSON.stringify({ schemaVersion: 1, components: components.value, global }))
+}
+
 async function saveDraft() {
+  if (loading.value || saveStatus.value === 'saving') return false
+  lastSaveOp = 'draft'
   saveStatus.value = 'saving'
   try {
-    const data = { components: JSON.parse(JSON.stringify(components.value)), global: JSON.parse(JSON.stringify(global)) }
-    await api.put('/page-config/home', { data: JSON.stringify(data) })
-    saveStatus.value = 'saved'
-    setTimeout(() => { saveStatus.value = '' }, 2000)
+    await api.put('/page-config/home-draft', { config: buildPayload() })
+    lastSavedStr.value = serializeState()
+    draftUnpublished.value = lastSavedStr.value !== publishedStr.value
+    markSaved()
+    return true
   } catch (e) {
-    console.error('Save failed:', e)
+    console.error('Save draft failed:', e)
     saveStatus.value = 'error'
-    setTimeout(() => { saveStatus.value = '' }, 3000)
+    return false
   }
 }
 
-async function publish() {
-  confirmTitle.value = '确认发布'
-  confirmMsg.value = '发布后将立即更新小程序首页展示，确定发布？'
-  confirmAction = async () => {
-    saveStatus.value = 'saving'
-    try {
-      const data = { components: JSON.parse(JSON.stringify(components.value)), global: JSON.parse(JSON.stringify(global)) }
-      await api.put('/page-config/home', { data: JSON.stringify(data), published: true })
-      saveStatus.value = 'saved'
-      setTimeout(() => { saveStatus.value = '' }, 2000)
-    } catch (e) {
-      console.error('Publish failed:', e)
-      saveStatus.value = 'error'
-      setTimeout(() => { saveStatus.value = '' }, 3000)
-    }
-  }
-  showConfirm.value = true
+function publish() {
+  openConfirm(
+    '确认发布',
+    '发布会把当前内容写入线上配置（page-config/home）并同步草稿。注意：客户端首页暂未接通装修配置（二期接通），发布不会立即改变小程序页面。确定发布？',
+    publishNow
+  )
 }
 
-// ---- Load saved config ----
-async function loadConfig() {
+async function publishNow() {
+  if (loading.value || saveStatus.value === 'saving') return false
+  lastSaveOp = 'publish'
+  saveStatus.value = 'saving'
   try {
-    const res = await api.get('/page-config/home')
-    if (res) {
-      let parsed = res
-      if (typeof parsed === 'string') parsed = JSON.parse(parsed)
-      if (parsed.data && typeof parsed.data === 'string') parsed = JSON.parse(parsed.data)
-      else if (parsed.data) parsed = parsed.data
-      if (parsed.components) components.value = parsed.components
-      if (parsed.global) Object.assign(global, parsed.global)
-    }
+    const payload = buildPayload()
+    await api.put('/page-config/home', { config: payload })
+    // 同步草稿通道，避免下次进入时旧草稿覆盖已发布内容
+    await api.put('/page-config/home-draft', { config: payload })
+    lastSavedStr.value = serializeState()
+    publishedStr.value = lastSavedStr.value
+    draftUnpublished.value = false
+    markSaved()
+    return true
   } catch (e) {
-    // No saved config yet
+    console.error('Publish failed:', e)
+    saveStatus.value = 'error'
+    return false
   }
 }
 
-loadConfig()
-saveHistory()
-
-// ---- Keyboard Shortcuts ----
-function onKeydown(e) {
-  if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo() }
-  if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); redo() }
-  if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveDraft() }
+function retryLast() {
+  if (lastSaveOp === 'publish') publishNow()
+  else saveDraft()
 }
-if (typeof window !== 'undefined') window.addEventListener('keydown', onKeydown)
+
+// ---- Load config（三形状嗅探：新规范 {schemaVersion,components,global} / 直接对象 / 旧 {data:"json"} 双重 JSON）----
+function sniffConfig(raw) {
+  let v = raw
+  try {
+    if (typeof v === 'string') v = JSON.parse(v)
+    if (v && typeof v === 'object') {
+      if (typeof v.data === 'string') v = JSON.parse(v.data)
+      else if (v.data && typeof v.data === 'object') v = v.data
+    }
+    if (v && typeof v === 'object' && v.config && typeof v.config === 'object' && !Array.isArray(v.components)) v = v.config
+  } catch (e) {
+    return null
+  }
+  if (!v || typeof v !== 'object' || !Array.isArray(v.components)) return null
+  return { components: v.components, global: (v.global && typeof v.global === 'object') ? v.global : null }
+}
+
+async function loadConfig() {
+  const [draftRes, homeRes] = await Promise.allSettled([
+    api.get('/page-config/home-draft'),
+    api.get('/page-config/home'),
+  ])
+  const draft = draftRes.status === 'fulfilled' ? sniffConfig(draftRes.value) : null
+  const published = homeRes.status === 'fulfilled' ? sniffConfig(homeRes.value) : null
+  const src = draft || published
+  if (src) {
+    components.value = ensureIds(src.components)
+    if (src.global) Object.assign(global, JSON.parse(JSON.stringify(src.global)))
+  }
+  const draftDiffers = !!draft && JSON.stringify(draft) !== JSON.stringify(published)
+  draftUnpublished.value = draftDiffers
+  publishedStr.value = draftDiffers
+    ? (published ? JSON.stringify({ components: published.components, global: published.global }) : '')
+    : serializeState()
+}
+
+// ---- Keyboard Shortcuts（onMounted 挂载 / onUnmounted 注销，离开页面后不再劫持）----
+function onKeydown(e) {
+  const t = e.target
+  const inField = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)
+  const mod = e.ctrlKey || e.metaKey
+  if (mod && (e.key === 's' || e.key === 'S')) { e.preventDefault(); saveDraft(); return }
+  if (inField) return
+  if (mod && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); undo(); return }
+  if (mod && (e.key === 'y' || e.key === 'Y' || (e.shiftKey && (e.key === 'z' || e.key === 'Z')))) { e.preventDefault(); redo(); return }
+  if ((e.key === 'Delete' || e.key === 'Backspace') && selIdx.value >= 0) { e.preventDefault(); delComp(selIdx.value) }
+}
+
+function onBeforeUnload(e) {
+  if (isDirty.value) {
+    e.preventDefault()
+    e.returnValue = ''
+  }
+}
+
+// ---- Leave guard（未保存拦截）----
+onBeforeRouteLeave(() => {
+  if (!isDirty.value) return true
+  return new Promise(resolve => {
+    leaveResolver = resolve
+    showLeaveConfirm.value = true
+  })
+})
+
+function resolveLeave(ok) {
+  showLeaveConfirm.value = false
+  if (leaveResolver) {
+    leaveResolver(ok)
+    leaveResolver = null
+  }
+}
+
+async function saveAndLeave() {
+  const ok = await saveDraft()
+  resolveLeave(ok)
+}
+
+function goBack() {
+  router.push('/dashboard')
+}
+
+// ---- Lifecycle ----
+onMounted(async () => {
+  window.addEventListener('keydown', onKeydown)
+  window.addEventListener('beforeunload', onBeforeUnload)
+  window.addEventListener('resize', computeFit)
+  if (typeof ResizeObserver !== 'undefined' && phoneEl.value) {
+    resizeObserver = new ResizeObserver(measurePhone)
+    resizeObserver.observe(phoneEl.value)
+  }
+  try {
+    await loadConfig()
+  } finally {
+    loading.value = false
+    lastSavedStr.value = serializeState()
+    // 载入完成后再打首帧快照：undo 至 0 号 = 载入时状态而非空画布
+    history.value = []
+    historyIdx.value = -1
+    saveHistory()
+    nextTick(measurePhone)
+  }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKeydown)
+  window.removeEventListener('beforeunload', onBeforeUnload)
+  window.removeEventListener('resize', computeFit)
+  if (resizeObserver) { resizeObserver.disconnect(); resizeObserver = null }
+  if (savedTimer) clearTimeout(savedTimer)
+})
 </script>
 
 
 <style scoped>
-.builder-shell{display:flex;flex-direction:column;height:100vh;background:#f0f2f5}
+.builder-shell{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;background:#f0f2f5}
 .top-toolbar{display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:50px;background:#fff;border-bottom:1px solid #e8e8e8;flex-shrink:0;gap:12px}
-.toolbar-left{display:flex;align-items:center;gap:12px}
+.toolbar-left{display:flex;align-items:center;gap:10px}
+.back-btn{font-weight:500}
 .logo{font-weight:700;color:#2979FF;font-size:15px;display:flex;align-items:center;gap:6px}
 .logo i{font-size:18px}
 .page-tag{font-size:12px;color:#999;background:#f0f0f0;padding:2px 10px;border-radius:10px}
-.toolbar-center{display:flex;gap:4px}
+.draft-badge{font-size:11px;background:#fff7e6;color:#d46b08;border:1px solid #ffd591;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.dirty-badge{font-size:11px;background:#fff1f0;color:#cf1322;border:1px solid #ffa39e;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.toolbar-center{display:flex;gap:4px;align-items:center}
 .tool-btn{padding:6px 12px;border:1px solid #d9d9d9;background:#fff;border-radius:6px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:4px;color:#555;transition:.15s}
 .tool-btn:hover{color:#2979FF;border-color:#2979FF}
 .tool-btn.active{background:#2979FF;color:#fff;border-color:#2979FF}
 .tool-btn:disabled{opacity:.35;cursor:not-allowed}
+.zoom-group{display:flex;border:1px solid #d9d9d9;border-radius:6px;overflow:hidden;margin-left:8px}
+.zoom-btn{padding:6px 9px;font-size:12px;background:#fff;border:none;border-right:1px solid #eee;cursor:pointer;color:#555}
+.zoom-btn:last-child{border-right:none}
+.zoom-btn:hover{color:#2979FF}
+.zoom-btn.on{background:#2979FF;color:#fff}
 .toolbar-right{display:flex;align-items:center;gap:8px}
 .save-stat{font-size:12px;display:flex;align-items:center;gap:4px}
 .save-stat.ok{color:#52c41a}
 .save-stat.err{color:#ff4d4f}
-.builder-body{display:flex;flex:1;overflow:hidden}
+.retry-btn{border:1px solid #ffa39e;background:#fff;color:#ff4d4f;border-radius:4px;font-size:11px;padding:2px 8px;cursor:pointer;margin-left:4px}
+.retry-btn:hover{background:#fff1f0}
+.notice-strip{display:flex;align-items:center;gap:8px;padding:6px 16px;background:#fffbe6;border-bottom:1px solid #ffe58f;color:#ad6800;font-size:12px;flex-shrink:0;line-height:1.5}
+.notice-strip i{font-size:14px;flex-shrink:0}
+.notice-strip code{background:rgba(0,0,0,.06);padding:0 4px;border-radius:3px;font-size:11px}
+.builder-body{display:flex;flex:1;overflow:hidden;position:relative}
+.loading-mask{position:absolute;inset:0;z-index:60;background:rgba(255,255,255,.65);display:flex;align-items:center;justify-content:center;gap:8px;color:#2979FF;font-size:14px}
 .lib-panel{width:240px;background:#fff;border-right:1px solid #e8e8e8;display:flex;flex-direction:column;flex-shrink:0}
 .panel-tabs{display:flex;border-bottom:1px solid #e8e8e8;padding:0 8px}
 .ptab{flex:1;text-align:center;padding:10px 0;font-size:12px;color:#888;cursor:pointer;border-bottom:2px solid transparent;transition:.15s}
 .ptab.on{color:#2979FF;border-bottom-color:#2979FF;font-weight:600}
 .lib-list{padding:10px;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1;align-content:start}
-.lib-item{padding:12px 8px;border:1px solid #f0f0f0;border-radius:8px;cursor:grab;text-align:center;transition:.15s;user-select:none}
+.lib-item{position:relative;padding:12px 8px;border:1px solid #f0f0f0;border-radius:8px;cursor:grab;text-align:center;transition:.15s;user-select:none}
 .lib-item:hover{border-color:#2979FF;background:#f5f8ff;box-shadow:0 2px 8px rgba(41,121,255,.1)}
 .lib-icon{font-size:22px;color:#2979FF;margin-bottom:4px}
 .lib-name{font-size:11px;color:#666;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.canvas-panel{flex:1;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;background:#e8ecf1}
-.phone{width:375px;border-radius:28px;background:#1a1a2e;padding:12px 8px;box-shadow:0 8px 40px rgba(0,0,0,.18)}
+.lib-badge{position:absolute;top:3px;right:3px;font-size:9px;background:#f0f0f0;color:#999;padding:1px 4px;border-radius:6px;line-height:1.4}
+.lib-foot{padding:8px 12px;border-top:1px solid #f0f0f0;font-size:11px;color:#bbb;display:flex;align-items:center;gap:4px;line-height:1.4;flex-shrink:0}
+.canvas-panel{flex:1;display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow:auto;background:#e8ecf1}
+.phone-scale-wrap{position:relative;flex-shrink:0}
+.phone{width:375px;border-radius:28px;background:#1a1a2e;padding:12px 8px;box-shadow:0 8px 40px rgba(0,0,0,.18);transform-origin:top left}
 .phone-top{height:24px;display:flex;justify-content:center}
 .phone-notch{width:120px;height:22px;background:#1a1a2e;border-radius:0 0 14px 14px}
-.phone-screen{background:#fff;border-radius:4px;overflow:hidden;min-height:600px;display:flex;flex-direction:column}
+.phone-screen{background:#fff;border-radius:4px;overflow:hidden;min-height:600px;display:flex;flex-direction:column;position:relative}
 .phone-bottom{height:20px;display:flex;justify-content:center;align-items:flex-end}
 .phone-home{width:100px;height:4px;background:#555;border-radius:2px}
 .s-navbar{padding:8px 14px 6px;font-size:13px;font-weight:600}
@@ -523,31 +811,35 @@ if (typeof window !== 'undefined') window.addEventListener('keydown', onKeydown)
 .s-title{font-size:15px;text-align:center}
 .s-search{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.05);border-radius:16px;padding:6px 12px;font-size:12px;font-weight:400;color:#999}
 .s-body{flex:1;padding:8px;min-height:400px}
-.s-comp{position:relative;margin-bottom:6px;border:2px solid transparent;border-radius:6px;transition:.15s}
+.s-comp{position:relative;margin-bottom:6px;border:2px solid transparent;border-radius:6px;transition:border-color .15s,box-shadow .15s}
 .s-comp.selected{border-color:#2979FF;box-shadow:0 0 0 2px rgba(41,121,255,.2)}
+.s-comp.hovered{border-color:rgba(41,121,255,.55)}
+.s-comp.di-before::before,.s-comp.di-after::after{content:'';position:absolute;left:-4px;right:-4px;height:3px;background:#2979FF;border-radius:2px;z-index:20;box-shadow:0 0 4px rgba(41,121,255,.8);pointer-events:none}
+.s-comp.di-before::before{top:-5px}
+.s-comp.di-after::after{bottom:-5px}
 .s-comp-bar{position:absolute;top:-36px;left:0;right:0;display:flex;align-items:center;gap:4px;background:#2979FF;color:#fff;padding:4px 8px;border-radius:6px 6px 0 0;font-size:11px;z-index:10}
 .s-comp-bar .s-comp-name{flex:1;font-weight:600;font-size:11px}
 .s-comp-bar button{background:none;border:none;color:#fff;cursor:pointer;padding:2px 4px;border-radius:3px;font-size:14px;display:flex;align-items:center}
 .s-comp-bar button:hover{background:rgba(255,255,255,.2)}
 .s-comp-bar button.del:hover{background:#ff4d4f}
-.s-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;color:#bbb;border:2px dashed #ddd;border-radius:10px;min-height:200px}
+.s-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;color:#bbb;border:2px dashed #ddd;border-radius:10px;min-height:200px;transition:.15s}
+.s-empty.active{border-color:#2979FF;background:rgba(41,121,255,.05);color:#2979FF}
 .s-empty i{font-size:36px;margin-bottom:8px}
 .s-tabbar{display:flex;border-top:1px solid #eee;padding:4px 0 2px;background:#fff}
 .s-tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;color:#999;padding:4px 0}
 .s-tab i{font-size:18px}
 .s-tab.on{color:#2979FF}
-.prop-panel{width:280px;background:#fff;border-left:1px solid #e8e8e8;display:flex;flex-direction:column;flex-shrink:0}
-.prop-title{padding:12px 16px;font-weight:600;font-size:14px;border-bottom:1px solid #f0f0f0;color:#333}
+.prop-panel{width:300px;background:#fff;border-left:1px solid #e8e8e8;display:flex;flex-direction:column;flex-shrink:0}
+.prop-title{padding:12px 16px;font-weight:600;font-size:14px;border-bottom:1px solid #f0f0f0;color:#333;flex-shrink:0}
 .prop-body{flex:1;overflow-y:auto;padding:12px}
-.prop-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#bbb;gap:8px}
-.preview-mode{flex:1;display:flex;align-items:center;justify-content:center;background:#d0d5dd;overflow-y:auto}
+.preview-mode{flex:1;display:flex;align-items:flex-start;justify-content:center;background:#d0d5dd;overflow-y:auto}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:1000}
 .modal-box{background:#fff;border-radius:12px;padding:24px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.15)}
 .modal-box h3{font-size:16px;margin:0 0 16px;display:flex;align-items:center;gap:8px}
 .tpl-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .tpl-card{border:2px solid #eee;border-radius:10px;padding:10px;cursor:pointer;transition:.15s}
 .tpl-card:hover{border-color:#2979FF;box-shadow:0 4px 16px rgba(41,121,255,.15)}
-.tpl-preview{height:120px;border-radius:6px;padding:8px;display:flex;align-items:flex-start}
+.tpl-preview{height:120px;border-radius:6px;padding:8px;display:flex;align-items:flex-start;overflow:hidden}
 .tpl-mock{flex:1}
 .tpl-name{text-align:center;margin-top:8px;font-size:13px;font-weight:600;color:#333}
 .global-form{display:flex;flex-direction:column;gap:10px}
@@ -565,4 +857,9 @@ if (typeof window !== 'undefined') window.addEventListener('keydown', onKeydown)
 .btn-sm{padding:5px 12px;font-size:12px}
 .ri-spin{animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+@media (min-width:1900px){
+  .lib-panel{width:260px}
+  .lib-list{grid-template-columns:repeat(3,1fr)}
+  .prop-panel{width:320px}
+}
 </style>
