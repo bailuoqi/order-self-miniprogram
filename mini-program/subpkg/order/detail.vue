@@ -51,6 +51,17 @@
       <text class="card-title">团队报价</text>
       <view class="quote-empty">
         <text>团队正在评估您的需求，报价后会在这里显示。有疑问可点下方「联系团队」商议。</text>
+        <!-- #ifdef H5 -->
+        <view class="qe-steps">
+          <text class="qe-step done">需求已提交</text>
+          <text class="qe-arrow">›</text>
+          <text class="qe-step active">团队评估报价</text>
+          <text class="qe-arrow">›</text>
+          <text class="qe-step">确认报价付定金</text>
+          <text class="qe-arrow">›</text>
+          <text class="qe-step">开工制作</text>
+        </view>
+        <!-- #endif -->
       </view>
     </view>
 
@@ -126,6 +137,17 @@
         </view>
       </view>
     </view>
+
+    <!-- #ifdef H5 -->
+    <!-- 桌面（≥768px）服务保障卡：填充宽屏下稀疏订单的左栏空档，窄屏隐藏与小程序保持一致 -->
+    <view class="card area-help desk-help-card">
+      <text class="card-title">服务保障</text>
+      <view class="hp-line"><i class="ri-shield-check-line hp-icon" /><text class="hp-text">先报价后付款：确认报价前不产生任何费用</text></view>
+      <view class="hp-line"><i class="ri-wallet-3-line hp-icon" /><text class="hp-text">定金开工，交付成果确认无误后再支付尾款</text></view>
+      <view class="hp-line"><i class="ri-money-cny-circle-line hp-icon" /><text class="hp-text">订单异常可在本页申请退款，审核后按原路退回</text></view>
+      <view class="hp-line"><i class="ri-chat-3-line hp-icon" /><text class="hp-text">报价与需求细节可随时点「联系团队」在线商议</text></view>
+    </view>
+    <!-- #endif -->
 
     <!-- 底部操作 -->
     <view class="bottom-bar">
@@ -348,11 +370,31 @@ const applyRefund = () => {
   @include fixed-bar-limit($content-max-page);
 }
 
+/* 桌面辅助内容（报价流程步骤 / 服务保障卡）：窄屏一律隐藏，保持与小程序视觉一致 */
+.qe-steps,
+.desk-help-card { display: none; }
+
+@include screen-tablet-up {
+  /* 待报价空态下的流程步骤：说明当前卡在哪一步 */
+  .qe-steps { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  .qe-step { background: var(--bg-page); color: var(--text-light); font-size: 12px; padding: 4px 12px; border-radius: 6px; }
+  .qe-step.done { background: #E8F5E9; color: #2E7D32; }
+  .qe-step.active { background: var(--primary-light); color: var(--primary-dark); font-weight: 600; }
+  .qe-arrow { color: #ccc; font-size: 12px; }
+
+  /* 服务保障卡（768–1199px 单列时排在卡片流末尾） */
+  .desk-help-card { display: block; }
+  .hp-line { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; }
+  .hp-icon { font-size: 17px; color: var(--primary); flex-shrink: 0; margin-top: 2px; }
+  .hp-text { font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
+}
+
 /* ≥1200px：grid-template-areas 双栏重排（只给现有卡片指定区域，不改 DOM 顺序，规划书 §4.7）。
-   左栏 62%：需求信息 / 交付成果 / 我的评价 / 订单信息；
+   左栏 62%：需求信息 / 交付成果 / 我的评价 / 订单信息 / 服务保障；
    右栏 38%：团队报价卡 / 操作卡 / 订单进度时间线。
    报价卡跨左栏的条件渲染行（交付/评价缺失时对应行高自动收缩），
-   操作卡与订单信息同行、时间线收尾，减少稀疏状态下的左栏空档（1366 走查调优）。 */
+   操作卡与订单信息同行、时间线收尾，服务保障卡（H5 专属）垫在左栏底部，
+   减少稀疏状态下的左栏空档（1366 走查调优）。 */
 @include screen-desktop-up {
   .page-order-detail {
     display: grid;
@@ -363,7 +405,7 @@ const applyRefund = () => {
       "deliver quote"
       "review quote"
       "info actions"
-      ". logs";
+      "help logs";
     align-items: start;
     align-content: start;
     gap: 20px 24px;
@@ -380,6 +422,7 @@ const applyRefund = () => {
   .area-require { grid-area: require; }
   .area-info { grid-area: info; }
   .area-logs { grid-area: logs; }
+  .area-help { grid-area: help; }
 
   /* 卡片间距改由 grid gap 承担 */
   .card { margin: 0; }

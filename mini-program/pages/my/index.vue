@@ -97,6 +97,46 @@
         </view>
       </view>
     </view>
+
+    <!-- #ifdef H5 -->
+    <!-- 桌面（≥768px）服务保障区：填充宽屏下页面下方的空档，窄屏隐藏与小程序保持一致 -->
+    <view class="section desk-guarantee">
+      <view class="section-title">服务保障</view>
+      <view class="guarantee-grid">
+        <view class="g-item">
+          <i class="ri-shield-check-line g-icon" />
+          <view class="g-info">
+            <text class="g-name">先报价后付款</text>
+            <text class="g-desc">团队免费评估报价，双方确认后才支付定金</text>
+          </view>
+        </view>
+        <view class="g-item">
+          <i class="ri-wallet-3-line g-icon" />
+          <view class="g-info">
+            <text class="g-name">定金开工 · 尾款验收</text>
+            <text class="g-desc">交付成果确认无误后再支付尾款</text>
+          </view>
+        </view>
+        <view class="g-item">
+          <i class="ri-money-cny-circle-line g-icon" />
+          <view class="g-info">
+            <text class="g-name">退款保障</text>
+            <text class="g-desc">订单异常可申请退款，审核后按原路退回</text>
+          </view>
+        </view>
+        <view class="g-item">
+          <i class="ri-chat-3-line g-icon" />
+          <view class="g-info">
+            <text class="g-name">全程在线沟通</text>
+            <text class="g-desc">每个订单独立会话，需求细节随时商议</text>
+          </view>
+        </view>
+      </view>
+      <view class="g-footer">
+        <text>服务流程：提交需求 › 团队报价 › 确认报价 › 付定金开工 › 交付成果 › 付尾款评价　·　客服 400-888-8888（9:00–21:00）</text>
+      </view>
+    </view>
+    <!-- #endif -->
   </view>
 </template>
 
@@ -211,7 +251,20 @@ const goEditProfile = () => uni.navigateTo({ url: '/subpkg/my/settings' });
 
 /* #ifdef H5 */
 /* ==================== 桌面适配（规划书 §4.11 / 任务 D3，仅 H5 编译，不进小程序包） ==================== */
+
+/* 服务保障区仅桌面显示：窄屏一律隐藏，保持与小程序视觉一致 */
+.desk-guarantee { display: none; }
+
 @media (min-width: $bp-tablet) {
+  /* 服务保障：2 列图文卡 + 流程/客服脚注 */
+  .desk-guarantee { display: block; }
+  .guarantee-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .g-item { display: flex; align-items: flex-start; gap: 12px; background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04); }
+  .g-icon { font-size: 22px; color: var(--primary); flex-shrink: 0; margin-top: 2px; }
+  .g-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .g-name { font-size: 14px; font-weight: 600; color: var(--text-main); }
+  .g-desc { font-size: 12px; color: var(--text-light); line-height: 1.6; }
+  .g-footer { margin-top: 12px; font-size: 12px; color: var(--text-light); line-height: 1.7; }
   /* 宽屏下 scaleX 弧形头部失真，改为平底渐变条；顶部留白不再按手机状态栏计算（覆盖内联 padding-top） */
   .header { padding-top: 28px !important; padding-bottom: 4px; }
   .header-bg { top: 0; left: 0; width: 100%; height: 100%; transform: none; border-radius: 0; }
@@ -230,6 +283,10 @@ const goEditProfile = () => uni.navigateTo({ url: '/subpkg/my/settings' });
   .section:nth-child(2) { grid-column: 2; margin: 24px 12px 0 24px; }
   .section:nth-child(3) { grid-column: 3; margin: 24px 24px 0 12px; }
   .menu-item { padding: 22px 0; }
+
+  /* 服务保障横跨两列，保障卡改 4 列一行 */
+  .desk-guarantee { grid-column: 2 / 4; margin: 24px 24px 0; }
+  .guarantee-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 /* #endif */
 </style>
