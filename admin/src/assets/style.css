@@ -18,3 +18,18 @@ a{color:var(--primary);text-decoration:none}
 .modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:1000}.modal-box{background:#fff;border-radius:12px;padding:24px;min-width:420px;max-width:600px;box-shadow:0 20px 60px rgba(0,0,0,.15)}.modal-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.modal-hd h3{font-size:18px}.modal-ft{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
 .stat-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}.stat-card{background:var(--card);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);display:flex;align-items:center;gap:16px}.stat-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px}.stat-val{font-size:28px;font-weight:700}.stat-lbl{font-size:13px;color:var(--text3)}
 .chart-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+
+/* ===== 以下为 S1（壳层与基础/T3）追加：只增不改，上方既有类禁止改名/删除 ===== */
+/* 内容限宽容器：1920 下居中限宽 ≤1600px，1366 下等效全宽 */
+.page-container{width:100%;max-width:1600px;margin:0 auto}
+/* 表格密度：宽屏长列表可在 .table 上叠加 .table-compact 收紧行高 */
+.table-compact th,.table-compact td{padding:8px 12px;font-size:13px}
+/* 单行截断工具类 */
+.text-ellipsis{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 响应式显隐工具类（断点纪律：全站仅 1440 / 1366 两档） */
+@media (max-width:1440px){
+  .hide-lt-1440{display:none!important}
+}
+@media (max-width:1366px){
+  .hide-lt-1366{display:none!important}
+}
