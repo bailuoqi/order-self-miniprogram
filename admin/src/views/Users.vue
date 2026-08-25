@@ -8,7 +8,7 @@
       <input v-model.trim="keyword" class="search-input" placeholder="搜索昵称 / 手机号" />
       <i v-if="keyword" class="ri-close-circle-fill clear" @click="keyword=''"></i>
     </div>
-    <span class="toolbar-meta">共 {{filtered.length}} 位客户<template v-if="keyword">（从 {{list.length}} 位中筛选）</template></span>
+    <span class="toolbar-meta"><template v-if="searching">搜索中…</template><template v-else-if="keyword">匹配 {{list.length}} 位客户</template><template v-else>共 {{total||list.length}} 位客户</template></span>
   </div>
   <table v-if="paged.length" class="table">
     <thead><tr>
@@ -25,7 +25,7 @@
         {{u.nickname||'-'}}
       </span></td>
       <td>{{u.phone||'-'}}</td>
-      <td>{{u.created_at?.slice(0,16)||'-'}}</td>
+      <td>{{fmtTime(u.created_at)}}</td>
     </tr></tbody>
   </table>
   <div v-else class="empty">
@@ -57,36 +57,48 @@ import api from '@/api'
 
 const PAGE_SIZE = 20
 const list = ref([])
+const total = ref(0)
 const loaded = ref(false)
+const searching = ref(false)
 const keyword = ref('')
 const sortDesc = ref(true)
 const page = ref(1)
 
-onMounted(async () => {
+// 列表接口不返回 phone 字段，手机号搜索走服务端既有 keyword 参数（昵称/手机号模糊匹配）
+const fetchList = async () => {
+  searching.value = true
   try {
-    const r = await api.get('/users', { params: { pageSize: 200 } })
+    const params = { pageSize: 200 }
+    if (keyword.value) params.keyword = keyword.value
+    const r = await api.get('/users', { params })
     list.value = r.list || []
-  } catch (e) {} finally { loaded.value = true }
+    total.value = r.total || 0
+  } catch (e) {} finally {
+    loaded.value = true
+    searching.value = false
+  }
+}
+onMounted(fetchList)
+
+let searchTimer = null
+watch(keyword, () => {
+  page.value = 1
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(fetchList, 300)
 })
 
-const filtered = computed(() => {
-  const kw = keyword.value.toLowerCase()
-  if (!kw) return list.value
-  return list.value.filter(u =>
-    String(u.nickname || '').toLowerCase().includes(kw) ||
-    String(u.phone || '').includes(kw))
-})
+const fmtTime = v => v ? String(v).replace('T', ' ').slice(0, 16) : '-'
 const ts = v => {
   if (!v) return 0
   const t = new Date(String(v).replace(' ', 'T')).getTime()
   return isNaN(t) ? 0 : t
 }
-const sorted = computed(() => [...filtered.value].sort((a, b) =>
+const sorted = computed(() => [...list.value].sort((a, b) =>
   sortDesc.value ? ts(b.created_at) - ts(a.created_at) : ts(a.created_at) - ts(b.created_at)))
 const totalPages = computed(() => Math.max(1, Math.ceil(sorted.value.length / PAGE_SIZE)))
 const paged = computed(() => sorted.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE))
 
-watch([keyword, sortDesc], () => { page.value = 1 })
+watch(sortDesc, () => { page.value = 1 })
 watch(totalPages, n => { if (page.value > n) page.value = n })
 </script>
 <style scoped>

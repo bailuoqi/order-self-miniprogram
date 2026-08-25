@@ -19,7 +19,7 @@
       <td class="cell-ellipsis" style="max-width:240px">{{s.order?.title||('订单 #'+s.order_id)}}</td>
       <td>{{s.order?.user?.nickname||'-'}}</td>
       <td class="cell-ellipsis" style="max-width:280px" :class="{'txt-unread':s.team_unread>0}">{{s.last_message||'-'}}</td>
-      <td :title="s.last_message_at?.slice(0,19)||''">{{relTime(s.last_message_at)}}</td>
+      <td :title="s.last_message_at?.replace('T',' ').slice(0,19)||''">{{relTime(s.last_message_at)}}</td>
       <td><span v-if="s.team_unread" class="tag tag-red">{{s.team_unread}}</span><span v-else style="color:var(--text3)">0</span></td>
       <td><button class="btn btn-primary btn-sm" @click.stop="$router.push('/orders/'+s.order_id)">去处理</button></td>
     </tr></tbody>
@@ -79,13 +79,13 @@ const unreadCount = computed(() => sessions.value.filter(s => s.team_unread > 0)
 const relTime = v => {
   if (!v) return '-'
   const t = ts(v)
-  if (!t) return String(v).slice(0, 16)
+  if (!t) return String(v).replace('T', ' ').slice(0, 16)
   const diff = Date.now() - t
   if (diff < 60e3) return '刚刚'
   if (diff < 3600e3) return Math.floor(diff / 60e3) + ' 分钟前'
   if (diff < 86400e3) return Math.floor(diff / 3600e3) + ' 小时前'
   if (diff < 7 * 86400e3) return Math.floor(diff / 86400e3) + ' 天前'
-  return String(v).slice(5, 16)
+  return String(v).replace('T', ' ').slice(5, 16)
 }
 </script>
 <style scoped>

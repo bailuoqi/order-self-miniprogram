@@ -19,7 +19,7 @@
       <td>{{a.display_name}}</td>
       <td><span class="tag tag-blue" :title="roles[a.role]?.desc||''">{{roleLabel(a.role)}}</span></td>
       <td><span :class="'tag '+(isActive(a)?'tag-green':'tag-red')">{{isActive(a)?'启用':'停用'}}</span></td>
-      <td :title="a.last_login_at?.slice(0,19)||''">{{relTime(a.last_login_at)}}</td>
+      <td :title="a.last_login_at?.replace('T',' ').slice(0,19)||''">{{relTime(a.last_login_at)}}</td>
       <td>
         <button class="btn btn-outline btn-sm" @click="openEdit(a)">编辑</button>
         <button v-if="a.role!=='super'" class="btn btn-danger btn-sm" style="margin-left:4px" @click="confirmDel=a">删除</button>
@@ -119,7 +119,7 @@ onMounted(load)
 const relTime = v => {
   if (!v) return '从未登录'
   const t = new Date(String(v).replace(' ', 'T')).getTime()
-  if (isNaN(t)) return String(v).slice(0, 16)
+  if (isNaN(t)) return String(v).replace('T', ' ').slice(0, 16)
   const diff = Date.now() - t
   if (diff < 60e3) return '刚刚'
   if (diff < 3600e3) return Math.floor(diff / 60e3) + ' 分钟前'

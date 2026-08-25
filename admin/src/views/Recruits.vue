@@ -15,7 +15,7 @@
       <td class="cell-ellipsis" style="max-width:200px">{{a.intro||'-'}}</td>
       <td class="cell-ellipsis" style="max-width:160px">{{a.works||'-'}}</td>
       <td><span :class="'tag '+(a.status==='approved'?'tag-green':a.status==='pending'?'tag-orange':'tag-red')">{{statusLabel(a.status)}}</span></td>
-      <td>{{a.created_at?.slice(0,16)}}</td>
+      <td>{{fmtTime(a.created_at)}}</td>
       <td>
         <button class="btn btn-outline btn-sm" @click.stop="openDetail(a)"><i class="ri-eye-line"></i>详情</button>
         <template v-if="a.status==='pending'">
@@ -50,8 +50,8 @@
         <div class="d-item"><label>联系方式</label><span>{{detail.contact}}</span></div>
         <div class="d-item"><label>意向方向</label><span class="tag tag-blue">{{dirLabel(detail.direction)}}</span></div>
         <div class="d-item"><label>状态</label><span :class="'tag '+(detail.status==='approved'?'tag-green':detail.status==='pending'?'tag-orange':'tag-red')">{{statusLabel(detail.status)}}</span></div>
-        <div class="d-item"><label>提交时间</label><span>{{detail.created_at?.slice(0,19)||'-'}}</span></div>
-        <div class="d-item"><label>审核时间</label><span>{{detail.audited_at?.slice(0,19)||'-'}}</span></div>
+        <div class="d-item"><label>提交时间</label><span>{{fmtTime(detail.created_at)}}</span></div>
+        <div class="d-item"><label>审核时间</label><span>{{fmtTime(detail.audited_at)}}</span></div>
       </div>
       <div class="d-block">
         <label>个人简介</label>
@@ -127,6 +127,7 @@ const tabs = [{key:'pending',label:'待审核'},{key:'approved',label:'已通过
 const sl = {pending:'待审核',approved:'已通过',rejected:'已拒绝'}
 const statusLabel = s => sl[s] || s
 const dirLabel = d => ({software:'软件',electronics:'电子',both:'软件+电子'}[d] || d)
+const fmtTime = v => v ? String(v).replace('T', ' ').slice(0, 16) : '-'
 const emptyText = computed(() => ({pending:'暂无待审核申请',approved:'暂无已通过的申请',rejected:'暂无已拒绝的申请','':'暂无申请'}[activeTab.value]))
 
 const filterBy = async k => {
