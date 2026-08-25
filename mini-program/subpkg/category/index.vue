@@ -7,7 +7,7 @@
         <view
           v-for="cat in group.items"
           :key="cat.id"
-          class="sidebar-item"
+          class="sidebar-item clickable"
           :class="{ active: activeId === cat.id }"
           @click="switchCategory(cat)"
         >
@@ -19,7 +19,7 @@
     <!-- 右侧服务列表 -->
     <scroll-view scroll-y class="main-content">
       <view class="product-list">
-        <view class="product-item" v-for="p in products" :key="p.id" @click="goDetail(p)">
+        <view class="product-item hover-lift" v-for="p in products" :key="p.id" @click="goDetail(p)">
           <image class="p-img" :src="p.cover" mode="aspectFill" />
           <view class="p-info">
             <text class="p-name text-ellipsis-2">{{ p.title }}</text>
@@ -40,7 +40,7 @@
 
       <view v-if="!products.length" class="empty">
         <text>该品类暂无标准服务</text>
-        <view class="btn-custom" @click="goCustom">发布自定义需求 ›</view>
+        <view class="btn-custom clickable" @click="goCustom">发布自定义需求 ›</view>
       </view>
     </scroll-view>
   </view>
@@ -108,4 +108,44 @@ const goCustom = () => uni.navigateTo({ url: '/subpkg/order/create-custom' });
 .p-sold { font-size: 22rpx; color: var(--text-light); }
 .empty { text-align: center; padding: 100rpx 0; color: var(--text-light); display: flex; flex-direction: column; gap: 20rpx; align-items: center; }
 .btn-custom { color: var(--primary); font-size: 26rpx; font-weight: 600; }
+
+/* #ifdef H5 */
+/* ==================== 桌面适配（B4，仅 H5 编译，不进小程序包） ==================== */
+
+/* 整体限宽 1200px 居中；高度仍由 calc(100vh - var(--window-top)) 计算，
+   topWindow 出现后 --window-top 由框架自动更新，天然兼容 */
+.page-category {
+  @include content-limit($content-max-page);
+}
+
+@include screen-tablet-up {
+  /* 左侧分类栏加宽至 220px，字号随桌面可读性微调 */
+  .sidebar {
+    width: 220px;
+  }
+  .sidebar-group {
+    padding: 18px 12px 8px;
+    font-size: 13px;
+  }
+  .sidebar-item {
+    padding: 14px 12px;
+    font-size: 14px;
+  }
+  .main-content {
+    padding: 16px;
+  }
+}
+
+@include screen-desktop-up {
+  /* ≥1200px 右侧服务卡双列（grid 拉伸对齐同行卡片高度） */
+  .product-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .product-item {
+    margin-bottom: 0;
+  }
+}
+/* #endif */
 </style>

@@ -2,17 +2,17 @@
   <view class="page-product-list">
     <!-- 筛选栏 -->
     <view class="filter-bar">
-      <view class="filter-item" :class="{ active: sortType === 'default' }" @click="setSort('default')">综合排序</view>
-      <view class="filter-item" :class="{ active: sortType === 'sales' }" @click="setSort('sales')">销量优先</view>
-      <view class="filter-item" :class="{ active: sortType === 'price' }" @click="setSort('price')">
+      <view class="filter-item clickable" :class="{ active: sortType === 'default' }" @click="setSort('default')">综合排序</view>
+      <view class="filter-item clickable" :class="{ active: sortType === 'sales' }" @click="setSort('sales')">销量优先</view>
+      <view class="filter-item clickable" :class="{ active: sortType === 'price' }" @click="setSort('price')">
         价格 <text>{{ sortType === 'price' ? (priceOrder ? '↑' : '↓') : '' }}</text>
       </view>
-      <view class="filter-item" :class="{ active: sortType === 'rating' }" @click="setSort('rating')">评分优先</view>
+      <view class="filter-item clickable" :class="{ active: sortType === 'rating' }" @click="setSort('rating')">评分优先</view>
     </view>
 
     <!-- 商品列表 -->
     <view class="product-list">
-      <view class="product-item" v-for="p in products" :key="p.id" @click="goDetail(p)">
+      <view class="product-item hover-lift" v-for="p in products" :key="p.id" @click="goDetail(p)">
         <image class="p-img" :src="p.cover" mode="aspectFill" />
         <view class="p-info">
           <text class="p-name text-ellipsis-2">{{ p.title }}</text>
@@ -110,4 +110,50 @@ const goDetail = (p) => uni.navigateTo({ url: '/subpkg/product/detail?id=' + p.i
 .p-price { .symbol { color: var(--danger); font-size: 24rpx; font-weight: 700; } .value { color: var(--danger); font-size: 36rpx; font-weight: 700; } .unit { color: var(--text-light); font-size: 22rpx; } }
 .btn-buy { background: linear-gradient(135deg, #2979FF, #1565C0); color: #fff; font-size: 24rpx; padding: 12rpx 28rpx; border-radius: 30rpx; font-weight: 600; }
 .loading, .empty { text-align: center; padding: 60rpx; color: var(--text-light); }
+
+/* #ifdef H5 */
+/* ==================== 桌面适配（B5，仅 H5 编译，不进小程序包） ==================== */
+
+/* 筛选栏与列表限宽 1200px 居中 */
+.filter-bar {
+  @include content-limit($content-max-page);
+}
+.product-list {
+  @include content-limit($content-max-page);
+}
+
+@include screen-tablet-up {
+  /* 吸顶位置跟随 H5 页头/顶栏高度（--window-top 由框架维护），避免吸顶后被固定页头遮挡 */
+  .filter-bar {
+    top: var(--window-top);
+  }
+  .filter-item {
+    padding: 14px 0;
+    font-size: 14px;
+  }
+
+  /* 768px 起双列卡片栅格，grid 拉伸对齐同行卡片高度（规避 2 行截断导致的高低不平） */
+  .product-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    padding: 16px 24px;
+  }
+  .product-item {
+    margin-bottom: 0;
+  }
+
+  .loading,
+  .empty {
+    padding: 40px;
+  }
+}
+
+@include screen-desktop-up {
+  /* ≥1200px 三列 */
+  .product-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+/* #endif */
 </style>
