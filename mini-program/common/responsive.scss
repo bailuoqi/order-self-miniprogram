@@ -1,0 +1,65 @@
+// ============================================================================
+// 桌面适配公共断点与混入（规划书 §3 / 任务 A2）
+//
+// 本文件经 uni.scss 注入到所有平台每个 <style lang="scss"> 的编译中，
+// 因此只允许包含 SCSS 变量与 @mixin，禁止任何会产生 CSS 输出的规则，
+// 否则样式会被复制进每个页面乃至小程序包。
+//
+// 各页使用约定（Streams B/C/D）：
+// - 变量与混入全局可用，页面 <style lang="scss"> 中直接使用，无需 @import；
+// - 桌面样式请统一写在条件编译 H5 块内（样式注释形式），避免进小程序包；
+// - 断点数值只从这里取，不要散写魔法数字。
+// ============================================================================
+
+// ---- 断点（以浏览器视口宽度计，与 pages.json topWindow.matchMedia.minWidth 对齐） ----
+$bp-tablet: 768px;   // ≥768px：顶栏出现、底部 tabBar 隐藏、内容限宽、卡片 2 列
+$bp-desktop: 1200px; // ≥1200px：双栏详情、服务列表 3 列、首页栅格
+
+// ---- 内容列宽（规划书 §2；页面背景铺满全宽，仅内容列限宽） ----
+$content-max-page: 1200px; // 常规页
+$content-max-form: 760px;  // 表单类页（发布需求/提交需求/评价/加入我们/设置等）
+$content-max-chat: 960px;  // 聊天室 / 消息列表
+$content-max-pay: 560px;   // 支付页
+
+// ---- 顶栏高度（与 pages.json topWindow.style.height 保持一致） ----
+$top-window-height: 60px;
+
+// ---- 媒体查询包装 ----
+@mixin screen-tablet-up {
+  @media (min-width: $bp-tablet) {
+    @content;
+  }
+}
+
+@mixin screen-desktop-up {
+  @media (min-width: $bp-desktop) {
+    @content;
+  }
+}
+
+// ---- 混入一：内容限宽居中（≥768px 生效） ----
+// 用于页面内容容器：宽屏下限宽并水平居中，窄屏不受影响。
+@mixin content-limit($max: $content-max-page) {
+  @media (min-width: $bp-tablet) {
+    width: 100%;
+    max-width: $max;
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
+  }
+}
+
+// ---- 混入二：底部固定条限宽居中（≥768px 生效） ----
+// 用于 position: fixed 且原样式为 left: 0; right: 0 的底部操作/提交条，
+// 宽屏下改为水平居中限宽（规划书 §10 首条风险的统一规避写法）。
+// 注意：会覆盖元素的 transform，原样式若已有 transform 需另行处理。
+@mixin fixed-bar-limit($max: $content-max-page) {
+  @media (min-width: $bp-tablet) {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: $max;
+    box-sizing: border-box;
+  }
+}

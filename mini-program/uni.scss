@@ -1,0 +1,6 @@
+/*
+ * uni.scss —— uni-app 约定文件：内容会被自动注入到每个 <style lang="scss"> 的编译中（各端一致）。
+ * 只允许放置不产生 CSS 输出的内容（SCSS 变量 / mixin），否则样式会在所有包内重复产出。
+ * 断点变量与桌面适配混入见 common/responsive.scss，经此注入后各页无需再手动引入。
+ */
+@use '@/common/responsive.scss' as *;
