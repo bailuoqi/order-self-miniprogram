@@ -151,30 +151,6 @@
   </div>
 </div>
 <div v-else class="card"><p style="text-align:center;padding:40px;color:var(--text3)">加载中...</p></div>
-
-<!-- 取消订单弹窗（替代 prompt） -->
-<div class="modal-mask" v-if="cancelModal" @click.self="cancelModal=false"><div class="modal-box">
-  <div class="modal-hd"><h3>取消订单</h3><i class="ri-close-line" style="cursor:pointer;font-size:20px" @click="cancelModal=false"></i></div>
-  <p style="font-size:13px;color:var(--text2);margin-bottom:12px">取消后订单不可恢复，客户将收到取消通知。</p>
-  <div class="form-group">
-    <label class="form-label">取消原因（必填）</label>
-    <textarea class="form-input" v-model="cancelReason" rows="3" placeholder="如：客户需求变更 / 双方未达成一致"></textarea>
-    <p v-if="cancelErr" class="field-err">{{cancelErr}}</p>
-  </div>
-  <div class="modal-ft"><button class="btn btn-outline" @click="cancelModal=false">再想想</button><button class="btn btn-danger" :disabled="cancelSubmitting" @click="doCancel">{{cancelSubmitting?'提交中...':'确认取消订单'}}</button></div>
-</div></div>
-
-<!-- 通用确认弹窗（替代 confirm） -->
-<div class="modal-mask" v-if="confirmBox" @click.self="confirmBox=null"><div class="modal-box" style="min-width:380px">
-  <div class="modal-hd"><h3>{{confirmBox.title}}</h3><i class="ri-close-line" style="cursor:pointer;font-size:20px" @click="confirmBox=null"></i></div>
-  <p style="font-size:14px;color:var(--text2);line-height:1.7">{{confirmBox.text}}</p>
-  <div class="modal-ft"><button class="btn btn-outline" @click="confirmBox=null">取消</button><button :class="'btn '+(confirmBox.danger?'btn-danger':'btn-primary')" @click="confirmOk">{{confirmBox.okText||'确定'}}</button></div>
-</div></div>
-
-<!-- 轻提示（替代 alert） -->
-<transition name="toast-fade"><div v-if="toast" class="toast" :class="'toast-'+toast.type">
-  <i :class="toast.type==='success'?'ri-checkbox-circle-fill':toast.type==='error'?'ri-close-circle-fill':'ri-information-fill'"></i>{{toast.text}}
-</div></transition>
 </div>
 </template>
 <script setup>
@@ -182,6 +158,8 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from "vue"
 import { useRoute } from "vue-router"
 import api from "@/api"
 import { ORDER_STATUS_MAP, ORDER_STATUS_TAG, fmtFen, fmtBytes, isUploadImageUrl } from "@/utils/order-status"
+import { toast } from "@/components/ui/AppToast.vue"
+import { appConfirm } from "@/components/ui/AppConfirm.vue"
 
 const route=useRoute()
 const order=ref(null)
@@ -198,32 +176,12 @@ const uploadProgress=ref('')
 const depositRatio=ref(30)
 const depositTouched=ref(false)
 
-const cancelModal=ref(false)
-const cancelReason=ref('')
-const cancelErr=ref('')
-const cancelSubmitting=ref(false)
-const confirmBox=ref(null)
-
 const sessionId=ref(0)
 const messages=ref([])
 const chatInput=ref('')
 const sending=ref(false)
 const msgBox=ref(null)
 let chatTimer=null
-
-const toast=ref(null)
-let toastTimer=null
-const showToast=(text,type='success')=>{
-  toast.value={text,type}
-  clearTimeout(toastTimer)
-  toastTimer=setTimeout(()=>toast.value=null,2600)
-}
-const askConfirm=(opts)=>{confirmBox.value=opts}
-const confirmOk=async()=>{
-  const fn=confirmBox.value?.onOk
-  confirmBox.value=null
-  if(fn)await fn()
-}
 
 const label=s=>ORDER_STATUS_MAP[s]||s
 const tagClass=s=>ORDER_STATUS_TAG[s]||""
@@ -281,17 +239,17 @@ const loadOrder=async()=>{
 
 const submitQuote=async()=>{
   const amount=Math.round(parseFloat(quoteForm.value.amount||'0')*100)
-  if(!amount||amount<=0) return showToast('请填写总价','error')
+  if(!amount||amount<=0) return toast('请填写总价','error')
   let deposit=quoteForm.value.deposit!==''?Math.round(parseFloat(quoteForm.value.deposit)*100):Math.round(amount*depositRatio.value/100)
-  if(isNaN(deposit)||deposit<0||deposit>amount) return showToast('定金需在 0 ~ 总价之间','error')
+  if(isNaN(deposit)||deposit<0||deposit>amount) return toast('定金需在 0 ~ 总价之间','error')
   quoteSubmitting.value=true
   try{
     await api.post(`/orders/${order.value.id}/quote`,{
       amount, deposit_amount:deposit, days:quoteForm.value.days, note:quoteForm.value.note,
     })
     await loadOrder()
-    showToast('报价已发送给客户')
-  }catch(e){showToast(e.message||'报价失败','error')}
+    toast('报价已发送给客户','success')
+  }catch(e){toast(e.message||'报价失败','error')}
   quoteSubmitting.value=false
 }
 
@@ -310,32 +268,32 @@ const onFilesChosen=async(e)=>{
       const r=await api.post('/upload/file',fd,{headers:{'Content-Type':'multipart/form-data'}})
       deliverForm.value.files.push({url:r.url,name:f.name,size:f.size})
       ok++
-    }catch(err){showToast(`「${f.name}」上传失败：${err.message||'请重试'}`,'error')}
+    }catch(err){toast(`「${f.name}」上传失败：${err.message||'请重试'}`,'error')}
   }
   uploading.value=false
   uploadProgress.value=''
-  if(ok===files.length)showToast(`已上传 ${ok} 个文件`)
+  if(ok===files.length)toast(`已上传 ${ok} 个文件`,'success')
 }
 
-const removeFile=(i)=>{
+const removeFile=async(i)=>{
   const f=deliverForm.value.files[i]
-  askConfirm({
+  const ok=await appConfirm({
     title:'删除交付文件',
-    text:`确定移除「${f.name}」？提交交付前可重新上传。`,
-    danger:true, okText:'删除',
-    onOk:()=>{deliverForm.value.files.splice(i,1)},
+    message:`确定移除「${f.name}」？提交交付前可重新上传。`,
+    danger:true, confirmText:'删除',
   })
+  if(ok)deliverForm.value.files.splice(i,1)
 }
 
-const submitDeliver=()=>{
+const submitDeliver=async()=>{
   if(!deliverForm.value.note&&!deliverForm.value.files.length&&!deliverForm.value.tracking)
-    return showToast('请填写交付说明或上传交付文件','error')
-  askConfirm({
+    return toast('请填写交付说明或上传交付文件','error')
+  const ok=await appConfirm({
     title:'确认交付',
-    text:`确认交付本单${deliverForm.value.files.length?`（含 ${deliverForm.value.files.length} 个交付文件）`:''}？交付后客户将收到尾款支付提示。`,
-    okText:'确认交付',
-    onOk:doDeliver,
+    message:`确认交付本单${deliverForm.value.files.length?`（含 ${deliverForm.value.files.length} 个交付文件）`:''}？交付后客户将收到尾款支付提示。`,
+    confirmText:'确认交付',
   })
+  if(ok)await doDeliver()
 }
 const doDeliver=async()=>{
   try{
@@ -345,40 +303,42 @@ const doDeliver=async()=>{
       tracking_no:deliverForm.value.tracking,
     })
     await loadOrder()
-    showToast('已交付，客户将收到尾款支付提示')
-  }catch(e){showToast(e.message||'交付失败','error')}
+    toast('已交付，客户将收到尾款支付提示','success')
+  }catch(e){toast(e.message||'交付失败','error')}
 }
 
 const doAssign=async()=>{
-  if(!assignId.value)return showToast('请选择成员','error')
+  if(!assignId.value)return toast('请选择成员','error')
   const a=admins.value.find(x=>x.id===assignId.value)
   try{
     await api.post(`/orders/${order.value.id}/assign`,{admin_id:a.id,admin_name:a.display_name||a.username})
     await loadOrder()
-    showToast('已分配负责成员')
-  }catch(e){showToast(e.message||'分配失败','error')}
+    toast('已分配负责成员','success')
+  }catch(e){toast(e.message||'分配失败','error')}
 }
 
 const doRemind=async()=>{
   try{
     await api.post(`/orders/${order.value.id}/remind`)
     await loadOrder()
-    showToast('已标记催付')
-  }catch(e){showToast(e.message||'操作失败','error')}
+    toast('已标记催付','success')
+  }catch(e){toast(e.message||'操作失败','error')}
 }
 
-const openCancel=()=>{cancelReason.value='';cancelErr.value='';cancelModal.value=true}
-const doCancel=async()=>{
-  if(!cancelReason.value.trim()){cancelErr.value='请填写取消原因';return}
-  cancelErr.value=''
-  cancelSubmitting.value=true
-  try{
-    await api.post(`/orders/admin/${order.value.id}/cancel`,{reason:cancelReason.value.trim()})
-    cancelModal.value=false
-    await loadOrder()
-    showToast('订单已取消')
-  }catch(e){cancelErr.value=e.message||'操作失败'}
-  cancelSubmitting.value=false
+const openCancel=async()=>{
+  const done=await appConfirm({
+    title:'取消订单',
+    message:'取消后订单不可恢复，客户将收到取消通知。',
+    confirmText:'确认取消订单', cancelText:'再想想', danger:true, loadingText:'提交中...',
+    input:{
+      label:'取消原因（必填）', placeholder:'如：客户需求变更 / 双方未达成一致',
+      required:true, requiredMessage:'请填写取消原因', rows:3,
+    },
+    onConfirm:async(reason)=>{await api.post(`/orders/admin/${order.value.id}/cancel`,{reason})},
+  })
+  if(!done)return
+  await loadOrder()
+  toast('订单已取消','success')
 }
 
 // ============ 聊天 ============
@@ -415,7 +375,7 @@ const sendChat=async()=>{
     await loadChat()
     await nextTick()
     if(msgBox.value)msgBox.value.scrollTop=msgBox.value.scrollHeight
-  }catch(e){showToast(e.message||'发送失败','error')}
+  }catch(e){toast(e.message||'发送失败','error')}
   sending.value=false
 }
 
@@ -427,7 +387,6 @@ onMounted(async()=>{
 })
 onUnmounted(()=>{
   if(chatTimer)clearInterval(chatTimer)
-  clearTimeout(toastTimer)
 })
 </script>
 <style scoped>
@@ -471,15 +430,4 @@ onUnmounted(()=>{
 .file-size{color:var(--text3);font-size:12px;flex-shrink:0}
 .spin{display:inline-block;animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-
-.field-err{color:var(--danger);font-size:12px;margin-top:6px}
-
-/* 轻提示 */
-.toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:2000;display:flex;align-items:center;gap:8px;padding:10px 20px;border-radius:8px;font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.12);background:#fff;color:var(--text)}
-.toast i{font-size:17px}
-.toast-success i{color:var(--success)}
-.toast-error i{color:var(--danger)}
-.toast-info i{color:var(--primary)}
-.toast-fade-enter-active,.toast-fade-leave-active{transition:all .25s}
-.toast-fade-enter-from,.toast-fade-leave-to{opacity:0;transform:translate(-50%,-8px)}
 </style>

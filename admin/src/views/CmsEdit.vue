@@ -24,14 +24,13 @@
     </div>
   </div>
 </div>
-
-<transition name="toast-fade"><div v-if="toast" class="toast" :class="{'toast-err':toastErr}">{{toast}}</div></transition>
 </div>
 </template>
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/api'
+import { toast } from '@/components/ui/AppToast.vue'
 const TYPE_NOTE={
   notice:'公告：用于客户端首页公告条与公告列表。',
   help:'帮助：用于客户端帮助/常见问题内容。',
@@ -42,24 +41,21 @@ const router=useRouter();const route=useRoute()
 const isEdit=!!route.params.id;const saving=ref(false)
 const form=ref({title:'',type:'notice',content:'',summary:'',status:1})
 
-const toast=ref('');const toastErr=ref(false);let toastTimer=null
-const showToast=(msg,err=false)=>{toast.value=msg;toastErr.value=err;clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.value='',2500)}
-
 onMounted(async()=>{
   if(isEdit){
     try{const a=await api.get('/cms/articles/'+route.params.id);form.value={...a}}
-    catch(e){showToast(e.message||'加载内容失败',true)}
+    catch(e){toast(e.message||'加载内容失败','error')}
   }
 })
 const save=async()=>{
-  if(!form.value.title?.trim())return showToast('请填写标题',true)
-  if(!form.value.content?.trim())return showToast('请填写内容',true)
+  if(!form.value.title?.trim())return toast('请填写标题','error')
+  if(!form.value.content?.trim())return toast('请填写内容','error')
   saving.value=true
   try{
     if(isEdit) await api.put('/cms/articles/'+form.value.id,form.value)
     else await api.post('/cms/articles',form.value)
     router.push('/cms')
-  }catch(e){showToast(e.message||'保存失败',true)}
+  }catch(e){toast(e.message||'保存失败','error')}
   finally{saving.value=false}
 }
 const back=()=>router.push('/cms')
@@ -85,8 +81,4 @@ const back=()=>router.push('/cms')
 .preview-body :deep(a){color:var(--primary)}
 .preview-empty{text-align:center;color:var(--text3);padding:60px 0;font-size:13px}
 .preview-empty i{font-size:36px;display:block;margin-bottom:10px}
-.toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);background:rgba(26,26,46,.9);color:#fff;padding:10px 22px;border-radius:8px;font-size:14px;z-index:2000;box-shadow:0 6px 20px rgba(0,0,0,.2)}
-.toast-err{background:var(--danger)}
-.toast-fade-enter-active,.toast-fade-leave-active{transition:all .25s}
-.toast-fade-enter-from,.toast-fade-leave-to{opacity:0;transform:translate(-50%,-8px)}
 </style>

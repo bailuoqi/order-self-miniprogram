@@ -18,7 +18,7 @@
       <td><span :class="'tag '+(p.status===1?'tag-green':'tag-red')">{{p.status===1?'上架':'下架'}}</span></td>
       <td class="op-cell">
         <router-link :to="'/products/edit/'+p.id" class="btn btn-outline btn-sm"><i class="ri-edit-line"></i> 编辑</router-link>
-        <button v-if="p.status===1" class="btn btn-outline btn-sm btn-off" @click="offTarget=p"><i class="ri-arrow-down-circle-line"></i> 下架</button>
+        <button v-if="p.status===1" class="btn btn-outline btn-sm btn-off" @click="takeOff(p)"><i class="ri-arrow-down-circle-line"></i> 下架</button>
         <button v-else class="btn btn-outline btn-sm btn-on" @click="putOn(p)"><i class="ri-arrow-up-circle-line"></i> 上架</button>
       </td>
     </tr></tbody>
@@ -26,31 +26,20 @@
   <p v-if="!list.length" class="empty"><i class="ri-inbox-line"></i>暂无商品<br/><router-link to="/products/edit" class="btn btn-primary" style="margin-top:14px"><i class="ri-add-line"></i> 新增商品</router-link></p>
   <p v-else-if="!filtered.length" class="empty"><i class="ri-filter-off-line"></i>没有符合筛选条件的商品</p>
 </div>
-
-<div class="modal-mask" v-if="offTarget" @click.self="offTarget=null"><div class="modal-box" style="min-width:360px">
-  <div class="modal-hd"><h3>下架确认</h3><i class="ri-close-line" style="cursor:pointer;font-size:20px" @click="offTarget=null"></i></div>
-  <p class="confirm-text">确定下架「{{offTarget.title}}」？下架后客户端不再展示该服务，可随时重新上架。</p>
-  <div class="modal-ft"><button class="btn btn-outline" @click="offTarget=null">取消</button><button class="btn btn-danger" :disabled="acting" @click="takeOff">{{acting?'处理中...':'确定下架'}}</button></div>
-</div></div>
-
-<transition name="toast-fade"><div v-if="toast" class="toast" :class="{'toast-err':toastErr}">{{toast}}</div></transition>
 </div>
 </template>
 <script setup>
 import { ref, computed, onMounted } from "vue"
 import api from "@/api"
+import { toast } from "@/components/ui/AppToast.vue"
+import { appConfirm } from "@/components/ui/AppConfirm.vue"
 const list=ref([])
 const categories=ref([])
 const kw=ref("")
 const catFilter=ref("")
 const statusFilter=ref("")
-const offTarget=ref(null)
-const acting=ref(false)
 
-const toast=ref("");const toastErr=ref(false);let toastTimer=null
-const showToast=(msg,err=false)=>{toast.value=msg;toastErr.value=err;clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.value="",2500)}
-
-const fetchList=async()=>{try{const r=await api.get("/products",{params:{pageSize:200,all:"1"}});list.value=r.list}catch(e){showToast(e.message||"加载失败",true)}}
+const fetchList=async()=>{try{const r=await api.get("/products",{params:{pageSize:200,all:"1"}});list.value=r.list}catch(e){toast(e.message||"加载失败","error")}}
 onMounted(async()=>{
   fetchList()
   try{categories.value=await api.get("/categories",{params:{all:1}})}catch(e){}
@@ -65,16 +54,19 @@ const filtered=computed(()=>{
   )
 })
 
-const takeOff=async()=>{
-  if(!offTarget.value)return
-  acting.value=true
-  try{await api.delete("/products/"+offTarget.value.id);offTarget.value=null;await fetchList();showToast("已下架")}
-  catch(e){showToast(e.message||"下架失败",true)}
-  finally{acting.value=false}
+const takeOff=async(p)=>{
+  const done=await appConfirm({
+    title:"下架确认",
+    message:`确定下架「${p.title}」？下架后客户端不再展示该服务，可随时重新上架。`,
+    confirmText:"确定下架",danger:true,loadingText:"处理中...",
+    onConfirm:async()=>{await api.delete("/products/"+p.id)},
+  })
+  if(!done)return
+  await fetchList();toast("已下架","success")
 }
 const putOn=async(p)=>{
-  try{await api.put("/products/"+p.id,{status:1});await fetchList();showToast("已上架")}
-  catch(e){showToast(e.message||"上架失败",true)}
+  try{await api.put("/products/"+p.id,{status:1});await fetchList();toast("已上架","success")}
+  catch(e){toast(e.message||"上架失败","error")}
 }
 </script>
 <style scoped>
@@ -90,10 +82,5 @@ const putOn=async(p)=>{
 .op-cell .btn+.btn{margin-left:8px}
 .btn-off:hover{border-color:var(--danger);color:var(--danger)}
 .btn-on:hover{border-color:var(--success);color:var(--success)}
-.confirm-text{color:var(--text2);line-height:1.7}
-.toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);background:rgba(26,26,46,.9);color:#fff;padding:10px 22px;border-radius:8px;font-size:14px;z-index:2000;box-shadow:0 6px 20px rgba(0,0,0,.2)}
-.toast-err{background:var(--danger)}
-.toast-fade-enter-active,.toast-fade-leave-active{transition:all .25s}
-.toast-fade-enter-from,.toast-fade-leave-to{opacity:0;transform:translate(-50%,-8px)}
 @media (max-width:1366px){.search-box{width:200px}.filter-sel{width:130px}}
 </style>

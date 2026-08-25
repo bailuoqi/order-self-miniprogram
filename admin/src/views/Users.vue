@@ -42,18 +42,14 @@
       <p class="empty-sub">客户通过小程序 / H5 注册后会自动出现在这里。</p>
     </template>
   </div>
-  <div v-if="totalPages>1" class="pagination">
-    <button :disabled="page===1" @click="page--">上一页</button>
-    <button v-for="p in totalPages" :key="p" :class="{active:p===page}" @click="page=p">{{p}}</button>
-    <button :disabled="page===totalPages" @click="page++">下一页</button>
-  </div>
-  <p v-if="totalPages>1" class="page-meta">第 {{page}} / {{totalPages}} 页 · 每页 {{PAGE_SIZE}} 条</p>
+  <AppPagination v-model:page="page" :total="sorted.length" :page-size="PAGE_SIZE" />
 </div>
 </div>
 </template>
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import api from '@/api'
+import AppPagination from '@/components/ui/AppPagination.vue'
 
 const PAGE_SIZE = 20
 const list = ref([])
@@ -117,6 +113,4 @@ watch(totalPages, n => { if (page.value > n) page.value = n })
 .avatar{width:28px;height:28px;border-radius:50%;object-fit:cover;flex:none}
 .avatar-ph{display:inline-flex;align-items:center;justify-content:center;background:var(--primary-light);color:var(--primary);font-size:14px}
 .empty-sub{font-size:13px;color:var(--text3);margin-top:6px;line-height:1.7}
-.pagination button[disabled]{opacity:.45;cursor:not-allowed}
-.page-meta{text-align:center;font-size:12px;color:var(--text3);margin-top:8px}
 </style>
