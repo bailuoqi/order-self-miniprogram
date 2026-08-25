@@ -10,7 +10,7 @@
       <view class="ic-title">需求信息</view>
 
       <!-- 品类 -->
-      <view class="ic-row" @click="showCategoryPicker">
+      <view class="ic-row clickable" @click="showCategoryPicker">
         <view class="ic-icon"><i class="ri-apps-2-line" style="font-size:36rpx;color:#2979FF;" /></view>
         <view class="ic-content">
           <text class="ic-label">品类（必选）</text>
@@ -51,9 +51,9 @@
         <view class="attach-box">
           <view class="attach-item" v-for="(f, i) in attachments" :key="i">
             <text class="attach-name">附件{{ i + 1 }}</text>
-            <i class="ri-close-line" style="font-size:28rpx;color:#999;" @click="attachments.splice(i, 1)" />
+            <i class="ri-close-line clickable" style="font-size:28rpx;color:#999;" @click="attachments.splice(i, 1)" />
           </view>
-          <view class="attach-add" @click="addAttachment">
+          <view class="attach-add clickable" @click="addAttachment">
             <i class="ri-add-line" style="font-size:28rpx;color:#2979FF;" />
             <text>添加附件：原理图/参考图等（选填）</text>
           </view>
@@ -77,12 +77,12 @@
       <view class="cat-panel" @click.stop>
         <view class="popup-header">
           <text class="popup-title">选择品类</text>
-          <i class="ri-close-line" style="font-size:40rpx;color:#999;" @click="pickerVisible = false" />
+          <i class="ri-close-line clickable" style="font-size:40rpx;color:#999;" @click="pickerVisible = false" />
         </view>
         <view v-for="group in categoryGroups" :key="group.key" class="cat-group">
           <text class="cat-group-title">{{ group.title }}</text>
           <view class="cat-options">
-            <view v-for="c in group.items" :key="c.id" class="cat-opt" :class="{ active: selectedCategory && selectedCategory.id === c.id }" @click="pickCategory(c)">
+            <view v-for="c in group.items" :key="c.id" class="cat-opt clickable" :class="{ active: selectedCategory && selectedCategory.id === c.id }" @click="pickCategory(c)">
               {{ c.name }}
             </view>
           </view>
@@ -214,4 +214,41 @@ const submit = async () => {
 .cat-options { display: flex; flex-wrap: wrap; gap: 14rpx; }
 .cat-opt { padding: 14rpx 28rpx; background: #F5F6FA; border-radius: 12rpx; font-size: 26rpx; color: #333; }
 .cat-opt.active { background: #E3F2FD; color: #1565C0; font-weight: 600; border: 2rpx solid #2979FF; }
+
+/* #ifdef H5 */
+/* ==================== 桌面适配（任务 C1，仅 H5 编译，不进小程序包） ==================== */
+
+/* ≥768px：表单列居中 760px，页面背景仍铺满全宽（规划书 §4.5） */
+.flow-tip,
+.info-card,
+.notice-text {
+  @include content-limit($content-max-form);
+}
+
+/* 底部提交条限宽 760px，与表单列对齐 */
+.submit-bar {
+  @include fixed-bar-limit($content-max-form);
+}
+
+@include screen-tablet-up {
+  .info-card { padding: 32rpx 36rpx; }
+
+  /* 大屏输入区加高，避免桌面上输入框过矮 */
+  .ic-textarea { min-height: 200px; }
+
+  /* 限宽悬浮的提交条补顶部圆角 */
+  .submit-bar { border-radius: 16px 16px 0 0; }
+
+  /* 品类选择弹窗：底部抽屉 → 居中模态（仅改定位，不改逻辑） */
+  .cat-popup { align-items: center; justify-content: center; padding: 24px; }
+  .cat-panel {
+    width: 560px;
+    max-width: 100%;
+    border-radius: 16px;
+    padding: 32rpx;
+    max-height: 72vh;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.16);
+  }
+}
+/* #endif */
 </style>

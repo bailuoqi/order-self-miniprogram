@@ -39,9 +39,9 @@
         <view class="attach-box">
           <view class="attach-item" v-for="(f, i) in attachments" :key="i">
             <text class="attach-name">附件{{ i + 1 }}</text>
-            <i class="ri-close-line" style="font-size:28rpx;color:#999;" @click="attachments.splice(i, 1)" />
+            <i class="ri-close-line clickable" style="font-size:28rpx;color:#999;" @click="attachments.splice(i, 1)" />
           </view>
-          <view class="attach-add" @click="addAttachment">
+          <view class="attach-add clickable" @click="addAttachment">
             <i class="ri-add-line" style="font-size:28rpx;color:#2979FF;" />
             <text>添加附件（选填）</text>
           </view>
@@ -152,4 +152,30 @@ const submitOrder = async () => {
 .submit-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; padding: 16rpx 28rpx; padding-bottom: calc(16rpx + env(safe-area-inset-bottom)); display: flex; align-items: center; gap: 20rpx; box-shadow: 0 -4rpx 20rpx rgba(0,0,0,.06); }
 .sb-btn { flex: 1; height: 88rpx; line-height: 88rpx; background: linear-gradient(135deg, #2979FF, #1565C0); color: #fff; font-size: 32rpx; border-radius: 44rpx; border: none; font-weight: 600; padding: 0; text-align: center; }
 .sb-btn[disabled] { background: #ddd; color: #999; }
+
+/* #ifdef H5 */
+/* ==================== 桌面适配（任务 C2，仅 H5 编译，不进小程序包） ==================== */
+
+/* ≥768px：表单列居中 760px，与发布需求页（C1）同规格（规划书 §4.5） */
+.goods-card,
+.flow-tip,
+.info-card {
+  @include content-limit($content-max-form);
+}
+
+/* 底部提交条限宽 760px，与表单列对齐 */
+.submit-bar {
+  @include fixed-bar-limit($content-max-form);
+}
+
+@include screen-tablet-up {
+  .info-card { padding: 32rpx 36rpx; }
+
+  /* 大屏输入区加高，避免桌面上输入框过矮 */
+  .ic-textarea { min-height: 160px; }
+
+  /* 限宽悬浮的提交条补顶部圆角 */
+  .submit-bar { border-radius: 16px 16px 0 0; }
+}
+/* #endif */
 </style>

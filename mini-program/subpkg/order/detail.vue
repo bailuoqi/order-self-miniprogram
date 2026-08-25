@@ -7,7 +7,7 @@
     </view>
 
     <!-- 报价卡片 -->
-    <view class="card quote-card" v-if="order.quote_amount">
+    <view class="card quote-card area-quote" v-if="order.quote_amount">
       <view class="card-title-row">
         <text class="card-title">团队报价</text>
         <text class="quote-time">{{ fmtDate(order.quoted_at) }}</text>
@@ -47,7 +47,7 @@
         </view>
       </view>
     </view>
-    <view class="card quote-card" v-else>
+    <view class="card quote-card area-quote" v-else>
       <text class="card-title">团队报价</text>
       <view class="quote-empty">
         <text>团队正在评估您的需求，报价后会在这里显示。有疑问可点下方「联系团队」商议。</text>
@@ -55,26 +55,26 @@
     </view>
 
     <!-- 交付成果 -->
-    <view class="card" v-if="order.delivered_at">
+    <view class="card area-deliver" v-if="order.delivered_at">
       <text class="card-title">交付成果</text>
       <view class="deliver-note" v-if="order.delivery_note">
         <text>{{ order.delivery_note }}</text>
       </view>
       <view class="deliver-files" v-if="order.delivery_files && order.delivery_files.length">
-        <view class="df-item" v-for="(f, i) in order.delivery_files" :key="i" @click="openFile(f)">
+        <view class="df-item clickable" v-for="(f, i) in order.delivery_files" :key="i" @click="openFile(f)">
           <i class="ri-attachment-2" style="font-size:28rpx;color:#2979FF;" />
           <text class="df-name">附件{{ i + 1 }}：{{ f }}</text>
         </view>
       </view>
       <view class="oi-row" v-if="order.delivery_tracking_no">
         <text>快递单号</text>
-        <text class="copyable" @click="copy(order.delivery_tracking_no)">{{ order.delivery_tracking_no }}</text>
+        <text class="copyable clickable" @click="copy(order.delivery_tracking_no)">{{ order.delivery_tracking_no }}</text>
       </view>
       <view class="oi-row"><text>交付时间</text><text>{{ fmtDate(order.delivered_at) }}</text></view>
     </view>
 
     <!-- 我的评价 -->
-    <view class="card" v-if="order.review_score">
+    <view class="card area-review" v-if="order.review_score">
       <text class="card-title">我的评价</text>
       <view class="review-stars">
         <i v-for="s in 5" :key="s" class="ri-star-fill" style="font-size:32rpx;" :style="{ color: s <= order.review_score ? '#FF9100' : '#E0E0E0' }" />
@@ -83,7 +83,7 @@
     </view>
 
     <!-- 需求信息 -->
-    <view class="card">
+    <view class="card area-require">
       <text class="card-title">需求信息</text>
       <view class="oi-row"><text>需求标题</text><text class="oi-strong">{{ order.title }}</text></view>
       <view class="oi-row"><text>来源</text><text>{{ order.source === 'custom' ? '自定义需求' : '标准服务下单' }}</text></view>
@@ -96,7 +96,7 @@
       </view>
       <view class="oi-col" v-if="order.attachments && order.attachments.length">
         <text class="oi-label">附件</text>
-        <view class="df-item" v-for="(f, i) in order.attachments" :key="i" @click="openFile(f)">
+        <view class="df-item clickable" v-for="(f, i) in order.attachments" :key="i" @click="openFile(f)">
           <i class="ri-attachment-2" style="font-size:28rpx;color:#2979FF;" />
           <text class="df-name">附件{{ i + 1 }}</text>
         </view>
@@ -104,9 +104,9 @@
     </view>
 
     <!-- 订单信息 -->
-    <view class="card">
+    <view class="card area-info">
       <text class="card-title">订单信息</text>
-      <view class="oi-row"><text>订单编号</text><text class="copyable" @click="copy(order.order_no)">{{ order.order_no }}</text></view>
+      <view class="oi-row"><text>订单编号</text><text class="copyable clickable" @click="copy(order.order_no)">{{ order.order_no }}</text></view>
       <view class="oi-row"><text>创建时间</text><text>{{ fmtDate(order.created_at) }}</text></view>
       <view class="oi-row" v-if="order.deposit_paid_at"><text>定金支付</text><text>¥{{ fmtPrice(order.deposit_amount) }} · {{ fmtDate(order.deposit_paid_at) }}</text></view>
       <view class="oi-row" v-if="order.final_paid_at"><text>尾款支付</text><text>¥{{ fmtPrice(order.final_amount) }} · {{ fmtDate(order.final_paid_at) }}</text></view>
@@ -114,7 +114,7 @@
     </view>
 
     <!-- 进度日志 -->
-    <view class="card" v-if="order.logs && order.logs.length">
+    <view class="card area-logs" v-if="order.logs && order.logs.length">
       <text class="card-title">订单进度</text>
       <view class="timeline">
         <view class="tl-item" v-for="(log, idx) in sortedLogs" :key="idx" :class="{ active: idx === 0 }">
@@ -129,15 +129,15 @@
 
     <!-- 底部操作 -->
     <view class="bottom-bar">
-      <view class="btn outline" @click="goChat">
+      <view class="btn outline clickable" @click="goChat">
         <i class="ri-chat-3-line" style="font-size:26rpx;margin-right:6rpx;" />联系团队
       </view>
-      <view class="btn danger" v-if="canCancel" @click="doCancel">取消订单</view>
-      <view class="btn danger" v-if="canRefund" @click="applyRefund">申请退款</view>
-      <view class="btn primary" v-if="order.status === 'quoting'" @click="doConfirmQuote">确认报价</view>
-      <view class="btn primary" v-if="order.status === 'confirmed'" @click="goPay('deposit')">支付定金 ¥{{ fmtPrice(order.deposit_amount) }}</view>
-      <view class="btn primary" v-if="order.status === 'delivered'" @click="goPay('final')">支付尾款 ¥{{ fmtPrice(order.final_amount) }}</view>
-      <view class="btn primary" v-if="order.status === 'final_paid'" @click="goReview">去评价</view>
+      <view class="btn danger clickable" v-if="canCancel" @click="doCancel">取消订单</view>
+      <view class="btn danger clickable" v-if="canRefund" @click="applyRefund">申请退款</view>
+      <view class="btn primary clickable" v-if="order.status === 'quoting'" @click="doConfirmQuote">确认报价</view>
+      <view class="btn primary clickable" v-if="order.status === 'confirmed'" @click="goPay('deposit')">支付定金 ¥{{ fmtPrice(order.deposit_amount) }}</view>
+      <view class="btn primary clickable" v-if="order.status === 'delivered'" @click="goPay('final')">支付尾款 ¥{{ fmtPrice(order.final_amount) }}</view>
+      <view class="btn primary clickable" v-if="order.status === 'final_paid'" @click="goReview">去评价</view>
     </view>
   </view>
 </template>
@@ -335,4 +335,74 @@ const applyRefund = () => {
 .btn.outline { border: 2rpx solid var(--border); color: var(--text-main); background: #fff; }
 .btn.primary { background: linear-gradient(135deg, #2979FF, #1565C0); color: #fff; }
 .btn.danger { border: 2rpx solid var(--danger); color: var(--danger); background: #fff; }
+
+/* #ifdef H5 */
+/* ==================== 桌面适配（任务 C4/C5，仅 H5 编译，不进小程序包） ==================== */
+
+/* 768–1199px：单列卡片限宽 1200px 居中，底部固定操作条同步限宽 */
+.card {
+  @include content-limit($content-max-page);
+}
+
+.bottom-bar {
+  @include fixed-bar-limit($content-max-page);
+}
+
+/* ≥1200px：grid-template-areas 双栏重排（只给现有卡片指定区域，不改 DOM 顺序，规划书 §4.7）。
+   左栏 62%：需求信息 / 交付成果 / 我的评价 / 订单信息；
+   右栏 38%：团队报价卡 / 操作卡 / 订单进度时间线。
+   条件渲染缺失的卡片（未交付、未评价等）对应区域由 grid 自动收缩。 */
+@include screen-desktop-up {
+  .page-order-detail {
+    display: grid;
+    grid-template-columns: minmax(0, 62fr) minmax(0, 38fr);
+    grid-template-areas:
+      "banner banner"
+      "require quote"
+      "deliver actions"
+      "review logs"
+      "info logs"
+      ". logs";
+    align-items: start;
+    align-content: start;
+    gap: 20px 24px;
+    max-width: $content-max-page;
+    margin: 0 auto;
+    padding: 20px 24px 48px;
+    box-sizing: border-box;
+  }
+
+  .status-banner { grid-area: banner; border-radius: var(--radius); }
+  .area-quote { grid-area: quote; }
+  .area-deliver { grid-area: deliver; }
+  .area-review { grid-area: review; }
+  .area-require { grid-area: require; }
+  .area-info { grid-area: info; }
+  .area-logs { grid-area: logs; }
+
+  /* 卡片间距改由 grid gap 承担 */
+  .card { margin: 0; }
+
+  /* C5：底部固定操作条 → 右栏操作卡（同一组按钮，仅切换定位与排布） */
+  .bottom-bar {
+    grid-area: actions;
+    position: static;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    transform: none;
+    width: auto;
+    max-width: none;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 20px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+
+  .bottom-bar .btn { justify-content: center; padding: 12px 16px; }
+}
+/* #endif */
 </style>

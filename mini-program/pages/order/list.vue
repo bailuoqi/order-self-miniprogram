@@ -2,14 +2,14 @@
   <view class="page-order-list">
     <!-- 状态Tab -->
     <scroll-view scroll-x class="tabs" :show-scrollbar="false">
-      <view v-for="tab in tabs" :key="tab.key" class="tab-item" :class="{ active: activeTab === tab.key }" @click="switchTab(tab.key)">
+      <view v-for="tab in tabs" :key="tab.key" class="tab-item clickable" :class="{ active: activeTab === tab.key }" @click="switchTab(tab.key)">
         <text>{{ tab.label }}</text>
       </view>
     </scroll-view>
 
     <!-- 订单列表 -->
     <scroll-view scroll-y class="order-list" @scrolltolower="loadMore">
-      <view class="order-card" v-for="order in orders" :key="order.id" @click="goDetail(order)">
+      <view class="order-card hover-lift" v-for="order in orders" :key="order.id" @click="goDetail(order)">
         <!-- 订单头 -->
         <view class="order-header">
           <text class="order-no">{{ order.source === 'custom' ? '自定义需求' : '标准服务' }} · {{ order.order_no }}</text>
@@ -128,4 +128,24 @@ const statusColor = (s) => ORDER_STATUS_COLOR[s] || '#999';
 .btn-action.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
 
 .loading, .empty { text-align: center; padding: 40rpx; color: var(--text-light); }
+
+/* #ifdef H5 */
+/* ==================== 桌面适配（任务 C3，仅 H5 编译，不进小程序包） ==================== */
+
+/* ≥768px：订单列表（含卡片）限宽 1200px 居中；tabs 白条铺满全宽、项目居中（规划书 §4.6） */
+.order-list {
+  @include content-limit($content-max-page);
+}
+
+@include screen-tablet-up {
+  /* 顶栏/页头出现后按 --window-top 扣除高度，避免内外双滚动条 */
+  .page-order-list { height: calc(100vh - var(--window-top)); }
+
+  .tabs { text-align: center; }
+  .tab-item { padding: 28rpx 36rpx; }
+
+  .order-card { padding: 32rpx; }
+  .btn-action { padding: 14rpx 32rpx; }
+}
+/* #endif */
 </style>

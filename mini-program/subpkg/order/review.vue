@@ -7,7 +7,7 @@
       <view class="star-row">
         <text class="star-label">整体评分</text>
         <view class="stars">
-          <i v-for="s in 5" :key="s" class="ri-star-fill" style="font-size:56rpx;"
+          <i v-for="s in 5" :key="s" class="ri-star-fill clickable" style="font-size:56rpx;"
             :style="{ color: s <= score ? '#FF9100' : '#E0E0E0' }" @click="score = s" />
         </view>
         <text class="star-text">{{ ['很不满意','不满意','一般','满意','非常满意'][score - 1] }}</text>
@@ -15,7 +15,7 @@
 
       <textarea class="rv-textarea" v-model="content" placeholder="说说本次服务的体验吧（选填）" :maxlength="500" placeholder-style="color:#ccc" />
 
-      <view class="anon-row" @click="anonymous = !anonymous">
+      <view class="anon-row clickable" @click="anonymous = !anonymous">
         <view class="anon-check" :class="{ on: anonymous }">
           <i v-if="anonymous" class="ri-check-line" style="font-size:22rpx;color:#fff;" />
         </view>
@@ -81,4 +81,31 @@ const submit = async () => {
 .submit-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; padding: 16rpx 28rpx; padding-bottom: calc(16rpx + env(safe-area-inset-bottom)); display: flex; box-shadow: 0 -4rpx 20rpx rgba(0,0,0,.06); }
 .sb-btn { flex: 1; height: 88rpx; line-height: 88rpx; background: linear-gradient(135deg, #2979FF, #1565C0); color: #fff; font-size: 32rpx; border-radius: 44rpx; border: none; font-weight: 600; padding: 0; text-align: center; }
 .sb-btn[disabled] { background: #ddd; color: #999; }
+
+/* #ifdef H5 */
+/* ==================== 桌面适配（任务 C7，仅 H5 编译，不进小程序包） ==================== */
+
+/* ≥768px：评价卡居中 760px（规划书 §4.9 / 任务 C7） */
+.card {
+  @include content-limit($content-max-form);
+}
+
+/* 底部提交条限宽 760px，与卡片对齐 */
+.submit-bar {
+  @include fixed-bar-limit($content-max-form);
+}
+
+@include screen-tablet-up {
+  .card { padding: 48rpx; }
+
+  /* 星级与输入区放大适配（星标字号需覆盖模板内联 rpx 值） */
+  .star-row { margin: 48rpx 0; gap: 20rpx; }
+  .stars { gap: 24rpx; }
+  .stars i { font-size: 40px !important; }
+  .rv-textarea { min-height: 160px; padding: 16px; }
+
+  /* 限宽悬浮的提交条补顶部圆角 */
+  .submit-bar { border-radius: 16px 16px 0 0; }
+}
+/* #endif */
 </style>
