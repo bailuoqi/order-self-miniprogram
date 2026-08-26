@@ -1,11 +1,28 @@
 /**
  * 首页装修配置（page-config/home）消费工具 —— 二期 C1 / U1。
  * 纯常量与纯函数，无平台差异代码，两端（mp-weixin / H5）通用；
- * schema 契约以《后台管理系统电脑网页适配二期施工方案》第 5 章为唯一权威。
+ * schema 契约以《后台管理系统电脑网页适配二期施工方案》第 5 章为唯一权威；
+ * 电脑版（home-pc 双 key）契约以《后台 PC 网页端装修施工方案》第 4 章为唯一权威。
  */
 
 // 本地缓存键：合法线上配置缓存一份，下次启动首帧直出（草稿预览不写缓存）
 export const HOME_CONFIG_CACHE_KEY = 'home_page_config';
+
+// 电脑版配置（page-config/home-pc）本地缓存键，与手机版缓存互相独立（P3 / T9）
+export const HOME_PC_CONFIG_CACHE_KEY = 'home_pc_page_config';
+
+/**
+ * 桌面视口判定（P3 / T9）：≥768px 读电脑版配置，断点与 topWindow /
+ * $bp-tablet 完全对齐（4.5）。小程序端无 window，恒返回 false。
+ */
+export function isDesktopViewport() {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+  try {
+    return window.matchMedia('(min-width: 768px)').matches;
+  } catch (e) {
+    return false;
+  }
+}
 
 // 客户端渲染子集（5.2）：子集外类型（coupon/countdown/groupBuy/seckill/
 // videoPlayer/articleList/floatingBtn 及未来新增）一律静默跳过，保证前向兼容
