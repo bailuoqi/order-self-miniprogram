@@ -18,7 +18,8 @@
   <!-- ====== Banner ====== -->
   <template v-else-if="comp.type==='banner'">
     <div class="pe-section"><div class="pe-section-title">轮播图</div>
-      <div class="pe-row"><label>高度</label><input type="number" v-model.number="comp.props.height" class="pe-input" min="60" max="400" @input="emitChange" /> px</div>
+      <div class="pe-row"><label>高度</label><input type="number" v-model.number="comp.props.height" class="pe-input" :min="R.bannerHeight[0]" :max="R.bannerHeight[1]" :placeholder="isPc ? R.bannerHeight.join('–') : null" @input="emitChange" /> px</div>
+      <div v-if="isPc" class="pe-hint">电脑版：桌面建议 1200×320 以上宽图；高度按 CSS px 直读（{{ R.bannerHeight[0] }}–{{ R.bannerHeight[1] }}）</div>
       <div class="pe-row"><label>圆角</label><input type="number" v-model.number="comp.props.radius" class="pe-input" min="0" max="40" @input="emitChange" /> px</div>
       <div class="pe-row"><label>切换间隔</label><input type="number" v-model.number="comp.props.interval" class="pe-input" min="1000" max="10000" step="500" @input="emitChange" /> ms</div>
       <div class="pe-row"><label>显示圆点</label><label class="pe-switch"><input type="checkbox" v-model="comp.props.dots" @change="emitChange" /></label></div>
@@ -58,7 +59,8 @@
   <!-- ====== NavGrid ====== -->
   <template v-else-if="comp.type==='navGrid'">
     <div class="pe-section"><div class="pe-section-title">导航宫格</div>
-      <div class="pe-row"><label>列数</label><input type="number" v-model.number="comp.props.columns" class="pe-input" @input="emitChange" min="2" max="5" /></div>
+      <div class="pe-row"><label>列数</label><input type="number" v-model.number="comp.props.columns" class="pe-input" @input="emitChange" :min="R.navGridColumns[0]" :max="R.navGridColumns[1]" :placeholder="isPc ? R.navGridColumns.join('–') : null" /></div>
+      <div v-if="isPc" class="pe-hint">电脑版：桌面每行 4–10 个，图标卡片按 56px 展示</div>
       <div class="pe-row"><label>间距</label><input type="number" v-model.number="comp.props.gutter" class="pe-input" @input="emitChange" /> px</div>
       <div v-for="(item,i) in (comp.props.items||[])" :key="i" class="pe-item-block">
         <div class="pe-item-header">导航 {{i+1}} <button class="pe-item-del" @click="removeNavItem(i)">x</button></div>
@@ -91,8 +93,9 @@
       </div>
       <div class="pe-row"><label>图片URL</label><input v-model="comp.props.src" class="pe-input" placeholder="或直接粘贴 URL" @input="emitChange" /></div>
       <div class="pe-row"><label>链接</label><input v-model="comp.props.link" class="pe-input" @input="emitChange" /></div>
-      <div class="pe-row"><label>高度</label><input type="number" v-model.number="comp.props.height" class="pe-input" min="40" max="500" @input="emitChange" /> px</div>
+      <div class="pe-row"><label>高度</label><input type="number" v-model.number="comp.props.height" class="pe-input" :min="R.imageAdHeight[0]" :max="R.imageAdHeight[1]" :placeholder="isPc ? R.imageAdHeight.join('–') : null" @input="emitChange" /> px</div>
       <div class="pe-row"><label>圆角</label><input type="number" v-model.number="comp.props.radius" class="pe-input" min="0" max="40" @input="emitChange" /> px</div>
+      <div v-if="isPc" class="pe-hint">电脑版：通栏展示（内容列 1200 宽，宽度恒 100%），建议横向宽图；高度按 CSS px 直读（{{ R.imageAdHeight[0] }}–{{ R.imageAdHeight[1] }}）</div>
     </div>
   </template>
 
@@ -103,7 +106,8 @@
       <div class="pe-row"><label>布局</label><select v-model="comp.props.layout" class="pe-input" @change="emitChange">
         <option value="scroll">横向滚动</option><option value="grid">宫格</option>
       </select></div>
-      <div class="pe-row" v-if="comp.props.layout==='grid'"><label>列数</label><input type="number" v-model.number="comp.props.columns" class="pe-input" @input="emitChange" min="1" max="4" /></div>
+      <div class="pe-row" v-if="comp.props.layout==='grid'"><label>列数</label><input type="number" v-model.number="comp.props.columns" class="pe-input" @input="emitChange" :min="R.goodsColumns[0]" :max="R.goodsColumns[1]" :placeholder="isPc ? R.goodsColumns.join('–') : null" /></div>
+      <div v-if="isPc" class="pe-hint">电脑版：桌面栅格 2–5 列；横向滚动为固定宽 280px 卡片</div>
       <div class="pe-row"><label>显示角标</label><label class="pe-switch"><input type="checkbox" v-model="comp.props.showBadge" @change="emitChange" /></label></div>
     </div>
     <div class="pe-section"><div class="pe-section-title">服务数据</div>
@@ -206,8 +210,23 @@ import ProductPicker from '@/components/builder/ProductPicker.vue'
 import IconPicker from '@/components/builder/IconPicker.vue'
 import { fmtPriceFen } from '@/components/builder/preview-format'
 
-const props = defineProps({ comp: Object })
+// device 为可选 prop（缺省 'mobile'）：未传入时面板行为与既有手机版完全一致，
+// 便于 P1（PageBuilder 设备切换）与本流任意顺序合并（施工方案 5.2）。
+const props = defineProps({
+  comp: Object,
+  device: { type: String, default: 'mobile' },
+})
 const emit = defineEmits(['change'])
+
+const isPc = computed(() => props.device === 'pc')
+
+// 双端数值区间（施工方案 4.5 契约）：手机版维持现状区间，电脑版按桌面尺度放宽。
+// 单位语义随设备解释：手机 px→rpx×2，电脑 CSS px 直读。
+const RANGES = {
+  mobile: { bannerHeight: [60, 400], imageAdHeight: [40, 500], navGridColumns: [2, 5], goodsColumns: [1, 4] },
+  pc: { bannerHeight: [120, 600], imageAdHeight: [80, 480], navGridColumns: [4, 10], goodsColumns: [2, 5] },
+}
+const R = computed(() => (isPc.value ? RANGES.pc : RANGES.mobile))
 
 const imagesText = ref('')
 const hotWordsText = ref('')
