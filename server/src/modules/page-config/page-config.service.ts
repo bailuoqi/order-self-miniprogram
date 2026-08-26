@@ -42,8 +42,17 @@ const DEFAULT_CONFIGS = {
       { icon: "ri-settings-3-line", name: "设置", link: "/subpkg/my/settings" },
       { icon: "ri-information-line", name: "关于我们", link: "/subpkg/my/about" }
     ]
-  }
+  },
+  // 电脑端首页配置（空对象即「无配置」，客户端按回退链处理）
+  "home-pc": {}
 };
+
+// 公开 GET 允许自动初始化落库的 key 白名单：
+// DEFAULT_CONFIGS 各 key + settings（品牌设置，一期起公开读）+ 上述各 key 的 -draft 后缀。
+// 白名单外且行不存在的 key 返回 {} 但不建行，消灭匿名 GET 写放大。
+const KNOWN_PAGE_KEYS = new Set(
+  [...Object.keys(DEFAULT_CONFIGS), "settings"].flatMap((key) => [key, `${key}-draft`]),
+);
 
 @Injectable()
 export class PageConfigService {
@@ -55,6 +64,10 @@ export class PageConfigService {
   async getConfig(pageKey: string) {
     let config = await this.repo.findOne({ where: { page_key: pageKey } });
     if (!config) {
+      // 未知 key（白名单外且行不存在）：返回 {} 但不建行，响应形状不变
+      if (!KNOWN_PAGE_KEYS.has(pageKey)) {
+        return {};
+      }
       // Init with defaults
       const defaults = DEFAULT_CONFIGS[pageKey] || {};
       config = this.repo.create({
