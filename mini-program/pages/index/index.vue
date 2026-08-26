@@ -17,15 +17,19 @@
     </view>
 
     <!-- #ifdef H5 -->
-    <!-- 草稿预览角标（?preview=draft 读 home-draft，不写缓存） -->
+    <!-- 草稿预览角标（?preview=draft 手机宽读 home-draft、桌面视口读 home-pc-draft，均不写缓存） -->
     <view v-if="isDraftPreview" class="draft-badge">草稿预览</view>
+
+    <!-- 装修配置电脑版内容区（P3 / T10）：桌面视口（≥768）且 home-pc 合法时替换渲染 -->
+    <config-blocks-pc v-if="showPcBlocks" :components="pcPageConfig.components" :global="pcPageConfig.global" />
     <!-- #endif -->
 
-    <!-- 装修配置版内容区：合法 schemaVersion:1 配置全量替换渲染（二期 C1） -->
-    <config-blocks v-if="pageConfig" :components="pageConfig.components" :global="pageConfig.global" />
+    <!-- 装修配置版内容区：合法 schemaVersion:1 配置全量替换渲染（二期 C1）；
+         电脑版分支未生效时（showPcBlocks 在小程序端恒 false）行为与现状一致 -->
+    <config-blocks v-if="!showPcBlocks && pageConfig" :components="pageConfig.components" :global="pageConfig.global" />
 
     <!-- 硬编码兜底版式：配置缺失/旧形状/为空/请求失败时原样渲染 -->
-    <template v-else>
+    <template v-else-if="!showPcBlocks">
     <!-- 品牌横幅 -->
     <view class="hero-card">
       <text class="hero-title">软件定制 · 电子代做</text>
@@ -211,6 +215,9 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+// #ifdef H5
+import { onBeforeUnmount } from 'vue';
+// #endif
 import { onShow } from '@dcloudio/uni-app';
 import { useCategoryStore } from '@/store/category.js';
 import { useProductStore } from '@/store/product.js';
@@ -225,6 +232,11 @@ import {
   pickBrandName,
 } from '@/common/page-config.js';
 import ConfigBlocks from '@/components/page-config/config-blocks.vue';
+// #ifdef H5
+// 电脑版消费（P3）：判定与缓存键复用同一纯函数模块；PC 渲染器仅 H5 引入，不进小程序包
+import { HOME_PC_CONFIG_CACHE_KEY, isDesktopViewport } from '@/common/page-config.js';
+import ConfigBlocksPc from '@/components/page-config/config-blocks-pc.vue';
+// #endif
 
 const authStore = useAuthStore();
 const categoryStore = useCategoryStore();
@@ -239,7 +251,7 @@ const userAvatar = ref('');
 // 合法配置的归一化渲染态（{components, global}）；null = 走硬编码兜底
 const pageConfig = ref(null);
 
-// H5 且 URL query 含 preview=draft 时改拉 home-draft（草稿预览，不写缓存）
+// H5 且 URL query 含 preview=draft 时改拉草稿（手机宽 home-draft / 桌面视口 home-pc-draft，均不写缓存）
 let draftPreview = false;
 // #ifdef H5
 try {
@@ -259,9 +271,45 @@ if (!isDraftPreview) {
   } catch (e) { /* 缓存不可用则等待网络结果 */ }
 }
 
-// global 消费：pageTitle → 页面标题（H5 为 document.title）；导航配色见下方 computed
+// -------------------- 电脑版配置消费（P3 / T10，仅 H5 编译） --------------------
+
+// #ifdef H5
+// 电脑版（home-pc）归一化渲染态；null = 按回退链走手机配置响应式或硬编码兜底
+const pcPageConfig = ref(null);
+// 桌面视口（≥768，与 topWindow / $bp-tablet 对齐）标记；matchMedia change 驱动更新
+const desktopViewport = ref(isDesktopViewport());
+// home-pc 是否已请求过：跨 768 拉伸窗口进入桌面视口时懒拉缺失配置
+let pcConfigRequested = false;
+
+// PC 缓存首帧直出（与手机版缓存互相独立；草稿预览不读不写）
+if (!isDraftPreview) {
+  try {
+    const cachedPc = uni.getStorageSync(HOME_PC_CONFIG_CACHE_KEY);
+    if (cachedPc) {
+      const cfg = sniffPageConfig(cachedPc);
+      if (isValidPageConfig(cfg)) pcPageConfig.value = normalizePageConfig(cfg);
+    }
+  } catch (e) { /* 缓存不可用则等待网络结果 */ }
+}
+// #endif
+
+// 电脑版分支是否生效：桌面视口且 home-pc 合法（回退链 5.4 第一环）；
+// 小程序端 H5 段被条件编译剔除，恒 false，手机/小程序渲染路径零改动
+const showPcBlocks = computed(() => {
+  let on = false;
+  // #ifdef H5
+  on = !!(desktopViewport.value && pcPageConfig.value);
+  // #endif
+  return on;
+});
+
+// global 消费：pageTitle → 页面标题（H5 为 document.title）；导航配色见下方 computed；
+// 电脑版分支生效时按 home-pc 的 global 取值（4.4）
 const applyPageTitle = () => {
-  const g = pageConfig.value && pageConfig.value.global;
+  let g = pageConfig.value && pageConfig.value.global;
+  // #ifdef H5
+  if (showPcBlocks.value) g = pcPageConfig.value.global;
+  // #endif
   if (g && g.pageTitle) {
     try { uni.setNavigationBarTitle({ title: g.pageTitle }); } catch (e) { /* 忽略 */ }
   }
@@ -289,6 +337,31 @@ const fetchPageConfig = async () => {
   }
 };
 
+// #ifdef H5
+// 电脑版配置获取（P3 / T10）：仅桌面视口追加请求，与 home 并行；
+// home-pc 缺失/不合法/失败 → 置 null 走回退链（home 响应式 → 硬编码），与现状逐像素一致
+const fetchPcPageConfig = async () => {
+  const key = isDraftPreview ? 'home-pc-draft' : 'home-pc';
+  try {
+    const raw = await api.get('/page-config/' + key);
+    const cfg = sniffPageConfig(raw);
+    if (isValidPageConfig(cfg)) {
+      pcPageConfig.value = normalizePageConfig(cfg);
+      applyPageTitle();
+      if (!isDraftPreview) uni.setStorageSync(HOME_PC_CONFIG_CACHE_KEY, raw);
+    } else {
+      pcPageConfig.value = null;
+      if (!isDraftPreview) uni.removeStorageSync(HOME_PC_CONFIG_CACHE_KEY);
+    }
+  } catch (e) {
+    pcPageConfig.value = null;
+    if (!isDraftPreview) {
+      try { uni.removeStorageSync(HOME_PC_CONFIG_CACHE_KEY); } catch (e2) { /* 忽略 */ }
+    }
+  }
+};
+// #endif
+
 // 导航 chrome 常驻，配置生效时吃 global 配色（宽屏下页内导航整体隐藏，不受影响）
 const navBarStyle = computed(() => {
   const s = { paddingTop: statusBarHeight.value + 'px' };
@@ -301,7 +374,11 @@ const navTextStyle = computed(() => {
   return g && g.navTextColor ? { color: g.navTextColor } : {};
 });
 const pageBgStyle = computed(() => {
-  const g = pageConfig.value && pageConfig.value.global;
+  let g = pageConfig.value && pageConfig.value.global;
+  // #ifdef H5
+  // 电脑版分支生效时页面背景吃 home-pc 的 global.bgColor（4.4），铺满全宽
+  if (showPcBlocks.value) g = pcPageConfig.value.global;
+  // #endif
   return g && g.bgColor ? { background: g.bgColor } : {};
 });
 
@@ -363,8 +440,15 @@ onShow(() => {
   if (authStore.userInfo) {
     userAvatar.value = authStore.userInfo.avatar || '';
   }
-  // 配置请求 / 品牌名与既有数据请求并行，互不阻塞
+  // 配置请求 / 品牌名与既有数据请求并行，互不阻塞；
+  // home 始终发出（兜底数据源），home-pc 仅桌面视口追加，两请求并行（5.4）
   fetchPageConfig();
+  // #ifdef H5
+  if (desktopViewport.value) {
+    pcConfigRequested = true;
+    fetchPcPageConfig();
+  }
+  // #endif
   fetchBrand();
   fetchData();
 });
@@ -391,6 +475,31 @@ onMounted(() => {
     },
     { passive: false }
   );
+});
+
+// 视口跨 768 变化（拉伸窗口）：matchMedia change 切换渲染分支；
+// 首次进入桌面视口且尚未拉过 home-pc 时懒拉配置（P3 / T10）
+let desktopMql = null;
+const onDesktopMqlChange = () => {
+  desktopViewport.value = isDesktopViewport();
+  if (desktopViewport.value && !pcConfigRequested) {
+    pcConfigRequested = true;
+    fetchPcPageConfig();
+  }
+  applyPageTitle();
+};
+onMounted(() => {
+  try {
+    desktopMql = window.matchMedia('(min-width: 768px)');
+    if (desktopMql.addEventListener) desktopMql.addEventListener('change', onDesktopMqlChange);
+    else if (desktopMql.addListener) desktopMql.addListener(onDesktopMqlChange);
+  } catch (e) { /* matchMedia 不可用则维持初始分支 */ }
+});
+onBeforeUnmount(() => {
+  if (!desktopMql) return;
+  if (desktopMql.removeEventListener) desktopMql.removeEventListener('change', onDesktopMqlChange);
+  else if (desktopMql.removeListener) desktopMql.removeListener(onDesktopMqlChange);
+  desktopMql = null;
 });
 // #endif
 
