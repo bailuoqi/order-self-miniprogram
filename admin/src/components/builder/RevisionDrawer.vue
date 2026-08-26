@@ -2,10 +2,10 @@
 <div class="rd-mask" @click.self="$emit('close')">
   <div class="rd-drawer">
     <div class="rd-head">
-      <span class="rd-head-title"><i class="ri-time-line"></i> 发布历史</span>
+      <span class="rd-head-title"><i class="ri-time-line"></i> 发布历史<span :class="['rd-device', isPcKey ? 'pc' : 'mb']"><i :class="isPcKey ? 'ri-computer-line' : 'ri-smartphone-line'"></i>{{ deviceLabel }}</span></span>
       <button type="button" class="rd-close" title="关闭" @click="$emit('close')"><i class="ri-close-line"></i></button>
     </div>
-    <div class="rd-hint">每次发布 / 回滚记录一条；回滚会把所选版本写回线上（{{ pageKey }}）与草稿（{{ pageKey }}-draft）。</div>
+    <div class="rd-hint">当前为<strong>{{ deviceLabel }}</strong>通道，历史与手机版 / 电脑版互相独立。每次发布 / 回滚记录一条；回滚会把所选版本写回{{ deviceLabel }}线上（{{ pageKey }}）与草稿（{{ pageKey }}-draft）。</div>
     <div class="rd-body">
       <div v-if="state==='loading'" class="rd-tip"><i class="ri-loader-4-line rd-spin"></i> 加载中…</div>
       <div v-else-if="state==='error'" class="rd-tip">发布历史加载失败 <button type="button" class="rd-retry" @click="load">重试</button></div>
@@ -31,8 +31,8 @@
   </div>
   <div v-if="confirmRev && !rolling" class="rd-confirm-mask">
     <div class="rd-confirm">
-      <h4><i class="ri-error-warning-line" style="color:#faad14"></i> 回滚确认</h4>
-      <p>回滚会把「{{ fmtTime(confirmRev.created_at) }}」的版本写回线上与草稿，画布将重载为该版本，当前未保存 / 未发布的修改将被覆盖。确定回滚？</p>
+      <h4><i class="ri-error-warning-line" style="color:#faad14"></i> 回滚确认（{{ deviceLabel }}）</h4>
+      <p>回滚会把「{{ fmtTime(confirmRev.created_at) }}」的版本写回{{ deviceLabel }}线上（{{ pageKey }}）与草稿（{{ pageKey }}-draft），画布将重载为该版本，当前未保存 / 未发布的修改将被覆盖。不影响另一端配置。确定回滚？</p>
       <div class="rd-confirm-btns">
         <button type="button" class="rd-btn-outline" @click="confirmRev=null">取消</button>
         <button type="button" class="rd-btn" @click="doRollback">确定回滚</button>
@@ -45,11 +45,16 @@
 <script setup>
 // 发布历史抽屉：列 GET /page-config/:key/revisions（时间/操作人/摘要），
 // 回滚走 POST /page-config/:key/rollback；接口不可用时由父组件整体隐藏入口（PageBuilder 探测）。
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import api from '@/api'
 
 const props = defineProps({ pageKey: { type: String, default: 'home' } })
 const emit = defineEmits(['close', 'rolled-back'])
+
+// 端标注（施工方案 4.1 key 矩阵）：电脑版 key 为 `home-pc`（-pc 后缀），其余按手机版展示。
+// 仅影响展示文案，历史 / 回滚逻辑已 key 泛型，不做任何改动。
+const isPcKey = computed(() => /-pc$/.test(props.pageKey || ''))
+const deviceLabel = computed(() => (isPcKey.value ? '电脑版' : '手机版'))
 
 const list = ref([])
 const state = ref('loading')
@@ -116,6 +121,10 @@ onMounted(load)
 @keyframes rd-in{from{transform:translateX(30px);opacity:0}to{transform:none;opacity:1}}
 .rd-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid #f0f0f0}
 .rd-head-title{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;color:#333}
+.rd-device{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;padding:1px 8px;border-radius:8px;flex-shrink:0}
+.rd-device.mb{background:#f0f6ff;color:#2979FF;border:1px solid #a9c8ff}
+.rd-device.pc{background:#f5f0ff;color:#722ed1;border:1px solid #d3adf7}
+.rd-hint strong{color:#666}
 .rd-close{background:none;border:none;cursor:pointer;font-size:18px;color:#999;padding:2px}
 .rd-close:hover{color:#333}
 .rd-hint{padding:8px 16px;font-size:11px;color:#999;line-height:1.5;background:#fafafa;border-bottom:1px solid #f0f0f0}
